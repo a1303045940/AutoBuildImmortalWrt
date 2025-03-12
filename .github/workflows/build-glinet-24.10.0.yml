@@ -11,7 +11,8 @@ on:
           - glinet_gl-mt2500
           - glinet_gl-mt6000
           - glinet_gl-b2200
-        default: glinet_gl-mt3000
+          - glinet_gl-mt3000
+        default: cmcc_rax3000
       include_docker:
         description: |
           是否编译 Docker 插件
