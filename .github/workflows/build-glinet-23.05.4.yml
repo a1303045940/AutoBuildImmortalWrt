@@ -8,7 +8,7 @@ on:
         description: "请选择路由器型号"
         required: true
         options:
-          - glinet_gl-mt3000
+          - cmcc_rax3000m
           - glinet_gl-mt2500
           - glinet_gl-mt6000
           - glinet_gl-b2200
