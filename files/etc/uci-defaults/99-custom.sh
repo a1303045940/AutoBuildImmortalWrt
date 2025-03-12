@@ -101,7 +101,7 @@ uci commit
 
 # 设置编译作者信息
 FILE_PATH="/etc/openwrt_release"
-NEW_DESCRIPTION="a1303045940 $(date +"%y%m%d")"
+NEW_DESCRIPTION='a1303045940 $(date +"%y%m%d")'
 sed -i "s/DISTRIB_DESCRIPTION='[^']*'/DISTRIB_DESCRIPTION='$NEW_DESCRIPTION'/" "$FILE_PATH"
 sed -i "s/hostname='ImmortalWrt'/hostname='RAX3000Me'/g" package/base-files/files/bin/config_generate
 # sed -i "s/DISTRIB_DESCRIPTION=.*/DISTRIB_DESCRIPTION='a1303045940 $(date +"%y%m%d")'/g" package/base-files/files/etc/openwrt_release
