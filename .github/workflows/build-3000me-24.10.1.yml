@@ -97,8 +97,8 @@ jobs:
 
       - name: Create info
         run: |
-          if [ "${{ github.event.inputs.include_docker }}" == "yes" ]; then
-            extra_content="### 默认带docker"
+          if [ "${{ github.event.inputs.include_docker }}" == "no" ]; then
+            extra_content="### 默认不带docker"
             echo -e "\n $extra_content" >> ${{ github.workspace }}/mediatek-filogic/info.md
           else
             echo -e "NO docker"
