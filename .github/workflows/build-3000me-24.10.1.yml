@@ -7,8 +7,8 @@ on:
         description: "请选择路由器型号"
         required: true
         options:
-          - rax3000me
-        default: rax3000me
+          - CMCC_RAX3000Me
+        default: CMCC_RAX3000Me
       include_docker:
         description: |
           是否编译 Docker 插件
@@ -56,7 +56,7 @@ jobs:
           fi
       
 
-      - name: Build Gl-iNet ImmortalWrt 24.10.1
+      - name: Build CMCC_RAX3000Me ImmortalWrt 24.10.1
         run: |
           profiles="${{ github.event.inputs.profile }}"
           include_docker="${{ github.event.inputs.include_docker }}"
@@ -107,8 +107,8 @@ jobs:
       - name: Upload ImmortalWrt as release assets
         uses: softprops/action-gh-release@v2.2.1
         with:
-          tag_name: Autobuild-GL-iNet
-          name: ImmortalWrt-GL-iNet
+          tag_name: Autobuild-CMCC_RAX3000Me
+          name: ImmortalWrt-CMCC_RAX3000Me
           body_path: ${{ github.workspace }}/mediatek-filogic/info.md
           files: |
             ${{ github.workspace }}/*.bin
