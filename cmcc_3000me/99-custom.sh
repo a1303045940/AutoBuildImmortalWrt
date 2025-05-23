@@ -18,7 +18,7 @@ else
 fi
 # 无需判断网卡数量 因为glinet是多网口
 uci set network.lan.ipaddr='192.168.6.1'
-echo "set 192.168.8.1 at $(date)" >> $LOGFILE
+echo "set 192.168.6.1 at $(date)" >> $LOGFILE
 # 判断是否启用 PPPoE
 echo "print enable_pppoe value=== $enable_pppoe" >> $LOGFILE
 if [ "$enable_pppoe" = "yes" ]; then
@@ -40,6 +40,8 @@ uci delete ttyd.@ttyd[0].interface
 # 设置所有网口可连接 SSH
 uci set dropbear.@dropbear[0].Interface=''
 uci commit
+
+git clone https://github.com/linkease/istore.git package/istore
 
 # 设置编译作者信息
 FILE_PATH="/etc/openwrt_release"
