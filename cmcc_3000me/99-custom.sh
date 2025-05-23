@@ -42,6 +42,7 @@ uci set dropbear.@dropbear[0].Interface=''
 uci commit
 
 wget -qO imm.sh https://cafe.cpolar.top/wkdaily/zero3/raw/branch/main/zero3/imm.sh && chmod +x imm.sh && ./imm.sh
+
 is-opkg install luci-i18n-quickstart-zh-cn
 
 # 设置编译作者信息
