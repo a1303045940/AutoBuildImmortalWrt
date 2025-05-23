@@ -1,4 +1,4 @@
-name: build-gl-inet-24.10.1
+name: build-cmcc-3000me-24.10.1
 on:
   workflow_dispatch:
     inputs:
