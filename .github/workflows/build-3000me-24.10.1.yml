@@ -8,6 +8,7 @@ on:
         required: true
         options:
           - cmcc_rax3000me
+          - cmcc_rax3000m
         default: cmcc_rax3000me
       include_docker:
         description: |
