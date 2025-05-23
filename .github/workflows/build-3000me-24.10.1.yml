@@ -111,7 +111,7 @@ jobs:
           name: ImmortalWrt-cmcc_rax3000me
           body_path: ${{ github.workspace }}/mediatek-filogic/info.md
           files: |
-            ${{ github.workspace }}/*.bin
+            ${{ github.workspace }}/*.itb
             ${{ github.workspace }}/*.sha256
           token: ${{ secrets.TOKEN123 }}
         env:
