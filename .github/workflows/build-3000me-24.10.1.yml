@@ -78,7 +78,7 @@ jobs:
             docker run --rm -i \
               --user root \
               -v "${{ github.workspace }}/bin:/home/build/immortalwrt/bin" \
-              -v "${{ github.workspace }}/cmcc_rax3000me:/home/build/immortalwrt/files/etc/uci-defaults" \
+              -v "${{ github.workspace }}/cmcc_3000me:/home/build/immortalwrt/files/etc/uci-defaults" \
               -v "${{ github.workspace }}/mediatek-filogic/build-24.sh:/home/build/immortalwrt/build.sh" \
               -e PROFILE=$profile \
               -e INCLUDE_DOCKER=$include_docker \
