@@ -1,4 +1,4 @@
-name: build-CMCC RAX3000Me-24.10.1
+name: build-RAX3000Me-24.10.1
 on:
   workflow_dispatch:
     inputs:
