@@ -90,7 +90,7 @@ jobs:
 
       - name: Generate Firmware SHA-256
         run: |
-          cp ${{ github.workspace }}/bin/targets/${{ env.platform }}/*.bin ${{ github.workspace }}
+          cp ${{ github.workspace }}/bin/targets/${{ env.platform }}/*.itb ${{ github.workspace }}
           for file in *.itb; do
             sha256sum "$file" > "$file.sha256"
             sha256sum -c "$file.sha256"
