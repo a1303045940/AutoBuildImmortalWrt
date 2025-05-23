@@ -17,7 +17,7 @@ else
    . "$SETTINGS_FILE"
 fi
 # 无需判断网卡数量 因为glinet是多网口
-uci set network.lan.ipaddr='192.168.8.1'
+uci set network.lan.ipaddr='192.168.6.1'
 echo "set 192.168.8.1 at $(date)" >> $LOGFILE
 # 判断是否启用 PPPoE
 echo "print enable_pppoe value=== $enable_pppoe" >> $LOGFILE
