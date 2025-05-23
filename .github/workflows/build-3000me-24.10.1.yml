@@ -113,6 +113,6 @@ jobs:
           files: |
             ${{ github.workspace }}/*.bin
             ${{ github.workspace }}/*.sha256
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.TOKEN123 }}
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.TOKEN123 }}
