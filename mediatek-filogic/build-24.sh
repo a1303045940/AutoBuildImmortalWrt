@@ -49,43 +49,8 @@ if [ "$INCLUDE_DOCKER" = "yes" ]; then
     echo "Adding package: luci-i18n-dockerman-zh-cn"
 fi
 
-do_istore() {
-	echo "do_istore method==================>"
-	# 换源
-	ISTORE_REPO=https://istore.istoreos.com/repo/all/store
-	FCURL="curl --fail --show-error"
+wget -qO imm.sh https://cafe.cpolar.top/wkdaily/zero3/raw/branch/main/zero3/imm.sh && chmod +x imm.sh && ./imm.sh
 
-	curl -V >/dev/null 2>&1 || {
-		echo "prereq: install curl"
-		opkg info curl | grep -Fqm1 curl || opkg update
-		opkg install curl
-	}
-
-	IPK=$($FCURL "$ISTORE_REPO/Packages.gz" | zcat | grep -m1 '^Filename: luci-app-store.*\.ipk$' | sed -n -e 's/^Filename: $.\+$$/\1/p')
-
-	[ -n "$IPK" ] || exit 1
-
-	$FCURL "$ISTORE_REPO/$IPK" | tar -xzO ./data.tar.gz | tar -xzO ./bin/is-opkg >/tmp/is-opkg
-
-	[ -s "/tmp/is-opkg" ] || exit 1
-
-	chmod 755 /tmp/is-opkg
-
-	# 关键修改：强制用 bash 运行 is-opkg，避免 Bad substitution
-	bash /tmp/is-opkg update
-	bash /tmp/is-opkg opkg install --force-reinstall luci-lib-taskd luci-lib-xterm
-	bash /tmp/is-opkg opkg install --force-reinstall luci-app-store || exit $?
-	[ -s "/etc/init.d/tasks" ] || bash /tmp/is-opkg opkg install --force-reinstall taskd
-	[ -s "/usr/lib/lua/luci/cbi.lua" ] || bash /tmp/is-opkg opkg install luci-compat >/dev/null 2>&1
-
-	# 换源
-	sed -i 's/istore.linkease.com/istore.istoreos.com/g' /bin/is-opkg
-	sed -i 's/istore.linkease.com/istore.istoreos.com/g' /etc/opkg/compatfeeds.conf
-	sed -i 's/istore.linkease.com/istore.istoreos.com/g' /www/luci-static/istore/index.js
-}
-
-
-do_istore
 
 # 构建镜像
 echo "$(date '+%Y-%m-%d %H:%M:%S') - Building image with the following packages:"
