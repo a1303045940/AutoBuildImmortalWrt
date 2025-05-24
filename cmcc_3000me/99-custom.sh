@@ -45,8 +45,9 @@ uci commit
 
 # 设置编译作者信息
 FILE_PATH="/etc/openwrt_release"
-NEW_DESCRIPTION="Compiled by tiktok"
+NEW_DESCRIPTION="Compiled by vx:Mr___zjz"
 sed -i "s/DISTRIB_DESCRIPTION='[^']*'/DISTRIB_DESCRIPTION='$NEW_DESCRIPTION'/" "$FILE_PATH"
+sed -i "s/DISTRIB_REVISION='[^']*'/DISTRIB_DESCRIPTION='$NEW_DESCRIPTION'/" "$FILE_PATH"
 
 do_istore() {
 	echo "do_istore method==================>"
