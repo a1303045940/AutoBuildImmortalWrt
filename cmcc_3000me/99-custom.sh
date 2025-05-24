@@ -47,7 +47,7 @@ is-opkg install luci-i18n-quickstart-zh-cn
 
 # 设置编译作者信息
 FILE_PATH="/etc/openwrt_release"
-NEW_DESCRIPTION="Compiled by vx:Mr___zjz"
+NEW_DESCRIPTION="Compiled by tiktok"
 sed -i "s/DISTRIB_DESCRIPTION='[^']*'/DISTRIB_DESCRIPTION='$NEW_DESCRIPTION'/" "$FILE_PATH"
 
 exit 0
