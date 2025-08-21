@@ -24,7 +24,7 @@ CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-zerotier"
 
 #不要的插件
 CUSTOM_PACKAGES="$CUSTOM_PACKAGES -smartmontools"
-CUSTOM_PACKAGES="$CUSTOM_PACKAGES -smartmontools-drivedb"
+#CUSTOM_PACKAGES="$CUSTOM_PACKAGES -smartmontools-drivedb"
 CUSTOM_PACKAGES="$CUSTOM_PACKAGES -luci-i18n-homeproxy-zh-cn"
 CUSTOM_PACKAGES="$CUSTOM_PACKAGES -luci-app-argon-config -luci-i18n-argon-config-zh-cn"
 # VPN
