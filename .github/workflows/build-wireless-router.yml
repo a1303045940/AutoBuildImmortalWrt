@@ -64,6 +64,7 @@ on:
           - cmcc_a10-ubootmod
           - cmcc_rax3000m
           - cmcc_rax3000me
+          - clt_r30b1
           - cmcc_rax3000m-emmc-ubootmod
           - cmcc_rax3000m-nand-ubootmod
           - imou_lc-hx3001-ubootmod
