@@ -21,7 +21,7 @@ sed -i '1i\
 arch aarch64_generic 10\n\
 arch aarch64_cortex-a53 15' repositories.conf
 
-
+echo "Starting 99-custom.sh at $(date)" >> $LOGFILE
 
 # yml 传入的路由器型号 PROFILE
 echo "Building for profile: $PROFILE"
