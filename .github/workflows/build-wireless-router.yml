@@ -558,7 +558,7 @@ jobs:
           fi
 
 
-      - name: Build Wireless ImmortalWrt 24.10.2
+      - name: Build Wireless ImmortalWrt 24.10.4
         run: |
           profile="${{ github.event.inputs.profile }}"
           echo "Building for profile: $profile"
@@ -570,7 +570,7 @@ jobs:
           ipq807x_models=$(cat model/ipq807x.txt | tr '\n' '|')
           ipq807x_models=${ipq807x_models%|}
           if [[ "$profile" =~ ^($ipq807x_models)$ ]]; then
-              case_tag="qualcommax-ipq807x-openwrt-24.10.2"
+              case_tag="qualcommax-ipq807x-openwrt-24.10.4"
               case_platform="qualcommax/ipq807x"
           fi
 
@@ -578,7 +578,7 @@ jobs:
           mt7621_models=$(cat model/mt7621.txt | tr '\n' '|')
           mt7621_models=${mt7621_models%|}
           if [[ "$profile" =~ ^($mt7621_models)$ ]]; then
-              case_tag="ramips-mt7621-openwrt-24.10.2"
+              case_tag="ramips-mt7621-openwrt-24.10.4"
               case_platform="ramips/mt7621"
           fi
 
@@ -586,7 +586,7 @@ jobs:
           bcm53xx_models=$(cat model/bcm53xx.txt | tr '\n' '|')
           bcm53xx_models=${bcm53xx_models%|}
           if [[ "$profile" =~ ^($bcm53xx_models)$ ]]; then
-              case_tag="bcm53xx-generic-openwrt-24.10.2"
+              case_tag="bcm53xx-generic-openwrt-24.10.4"
               case_platform="bcm53xx/generic"
           fi
 
@@ -594,7 +594,7 @@ jobs:
           case "$profile" in
               glinet_gl-b2200)
                   # 虽然它是高通ipq40xx平台 但由于都是gl机型 故放在一起 找起来方便
-                  tag=ipq40xx-generic-openwrt-24.10.2
+                  tag=ipq40xx-generic-openwrt-24.10.4
                   echo "platform=ipq40xx/generic" >> $GITHUB_ENV
                   ;;
               glinet_gl-axt1800|glinet_gl-ax1800)
@@ -629,7 +629,7 @@ jobs:
                       echo "platform=$case_platform" >> $GITHUB_ENV
                   else
                       # 默认分支
-                      tag=mediatek-filogic-openwrt-24.10.2
+                      tag=mediatek-filogic-openwrt-24.10.4
                   fi
                   ;;
             esac
