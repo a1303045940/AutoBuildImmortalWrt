@@ -491,7 +491,7 @@ on:
         default: "192.168.6.1"
       enable_store:
         description: "集成 store 商店"
-        required: false
+        required: true
         type: boolean
         default: false
       include_docker:
