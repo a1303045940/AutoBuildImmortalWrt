@@ -158,12 +158,6 @@ jobs:
             cp "${{ github.workspace }}/shell/custom2-packages.sh" ./shell/
             echo "✅ 已复制 custom2-packages.sh"
           else
-            # 创建默认的 custom2-packages.sh
-            cat > ./shell/custom2-packages.sh <<'EOFMARKER'
-#!/bin/bash
-CUSTOM_PACKAGES=""
-echo "📦 CUSTOM_PACKAGES: $CUSTOM_PACKAGES"
-EOFMARKER
             chmod +x ./shell/custom2-packages.sh
             echo "✅ 已创建默认 custom2-packages.sh"
           fi
