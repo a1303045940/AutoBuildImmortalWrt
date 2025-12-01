@@ -10,7 +10,6 @@ on:
         options:
           - sl_3000-emmc
           - cmcc_rax3000m-nand
-          
         default: sl_3000-emmc
       custom_router_ip:
         description: "请设置路由器的管理地址 格式:192.168.x.1 或 10.x.x.1"
@@ -147,21 +146,27 @@ jobs:
             echo "✅ 已复制 arch.conf"
           fi
 
-            cat > ./shell/custom2-packages.sh << 'EOF'
-
       - name: Run build24.sh script
         run: |
           cd ${{ env.IMAGE_BUILDER_DIR }}
 
           # 确保 shell 目录存在
           mkdir -p shell
-          # 如果源仓库有 custom-packages.sh,复制它
+          
+          # 如果源仓库有 custom2-packages.sh,复制它
           if [ -f "${{ github.workspace }}/shell/custom2-packages.sh" ]; then
             cp "${{ github.workspace }}/shell/custom2-packages.sh" ./shell/
             echo "✅ 已复制 custom2-packages.sh"
           else
             # 创建默认的 custom2-packages.sh
             cat > ./shell/custom2-packages.sh << 'EOF'
+#!/bin/bash
+CUSTOM_PACKAGES=""
+echo "📦 CUSTOM_PACKAGES: $CUSTOM_PACKAGES"
+EOF
+            chmod +x ./shell/custom2-packages.sh
+            echo "✅ 已创建默认 custom2-packages.sh"
+          fi
           
           # 复制 build24.sh 到 ImageBuilder 目录
           if [ -f "${{ github.workspace }}/mediatek-filogic/build24.sh" ]; then
@@ -207,8 +212,8 @@ jobs:
             fi
             
             # 自定义包
-            if [ -f "${{ github.workspace }}/shell/custom2-packages.sh" ]; then
-              source ${{ github.workspace }}/shell/custom2-packages.sh
+            if [ -f "./shell/custom2-packages.sh" ]; then
+              source ./shell/custom2-packages.sh
               PACKAGES="$PACKAGES $CUSTOM_PACKAGES"
             fi
             
