@@ -153,24 +153,6 @@ jobs:
             echo "✅ 已复制 arch.conf"
           fi
 
-      - name: Configure repositories
-        run: |
-          cd ${{ env.IMAGE_BUILDER_DIR }}
-          
-          echo "🔧 配置软件源..."
-          # 修改 Kwrt 软件源为在线地址
-          sed -i 's|file://www/wwwroot/|https://|g' repositories.conf
-          sed -i 's|src |src/gz |g' repositories.conf
-          
-          # 添加 OpenWrt 官方源作为补充
-          echo "" >> repositories.conf
-          echo "# OpenWrt official repo for missing packages" >> repositories.conf
-          echo "src/gz openwrt_packages https://downloads.openwrt.org/releases/${{ env.KWRT_PACKAGE_VERSION }}/packages/aarch64_cortex-a53/packages" >> repositories.conf
-          echo "src/gz openwrt_luci https://downloads.openwrt.org/releases/${{ env.KWRT_PACKAGE_VERSION }}/packages/aarch64_cortex-a53/luci" >> repositories.conf
-          
-          echo "📄 repositories.conf 内容:"
-          cat repositories.conf
-
       - name: Run build24.sh script
         run: |
           cd ${{ env.IMAGE_BUILDER_DIR }}
