@@ -160,10 +160,10 @@ jobs:
           else
             # 创建默认的 custom2-packages.sh
             cat > ./shell/custom2-packages.sh << 'EOF'
-#!/bin/bash
-CUSTOM_PACKAGES=""
-echo "📦 CUSTOM_PACKAGES: $CUSTOM_PACKAGES"
-EOF
+            #!/bin/bash
+            CUSTOM_PACKAGES=""
+            echo "📦 CUSTOM_PACKAGES: $CUSTOM_PACKAGES"
+            EOF
             chmod +x ./shell/custom2-packages.sh
             echo "✅ 已创建默认 custom2-packages.sh"
           fi
