@@ -98,7 +98,7 @@ jobs:
           
           # 默认平台
           platform="mediatek/filogic"
-          download_url="https://dl.openwrt.ai/releases/${{ env.KWRT_VERSION }}/targets/mediatek/filogic/kwrt-imagebuilder-mediatek-filogic.Linux-x86_64.tar.zst"
+          download_url="https://github.com/a1303045940/Kwrt/releases/download/12%2F02_2025_01%2F51_mediatek_filogic/targets.tar.gz"
           
           # 读取 ipq807x 机型
           if [ -f model/ipq807x.txt ]; then
