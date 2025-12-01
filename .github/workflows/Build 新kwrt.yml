@@ -91,7 +91,7 @@ jobs:
         run: |
           mkdir -p shell
           if [ "${{ github.event.inputs.enable_store }}" == "true" ]; then
-            echo 'CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-store"' >> shell/custom-packages.sh
+            echo 'CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-store"' >> shell/custom2-packages.sh
             echo "✅ 已追加 luci-app-store"
           else
             echo "❎ 未启用 luci-app-store"
@@ -135,12 +135,6 @@ jobs:
           # 创建自定义文件目录
           mkdir -p files/etc/uci-defaults files/etc/config
           
-          # 复制自定义配置
-          if [ -d "${{ github.workspace }}/glinet" ]; then
-            cp -r ${{ github.workspace }}/glinet/* files/etc/uci-defaults/ 2>/dev/null || true
-            echo "✅ 已复制 glinet 配置"
-          fi
-          
           if [ -d "${{ github.workspace }}/custom" ]; then
             cp -r ${{ github.workspace }}/custom/* files/etc/config/ 2>/dev/null || true
             echo "✅ 已复制 custom 配置"
@@ -153,7 +147,7 @@ jobs:
             echo "✅ 已复制 arch.conf"
           fi
 
-            cat > ./shell/custom-packages.sh << 'EOF'
+            cat > ./shell/custom2-packages.sh << 'EOF'
 
       - name: Run build24.sh script
         run: |
@@ -162,12 +156,12 @@ jobs:
           # 确保 shell 目录存在
           mkdir -p shell
           # 如果源仓库有 custom-packages.sh,复制它
-          if [ -f "${{ github.workspace }}/shell/custom-packages.sh" ]; then
-            cp "${{ github.workspace }}/shell/custom-packages.sh" ./shell/
+          if [ -f "${{ github.workspace }}/shell/custom2-packages.sh" ]; then
+            cp "${{ github.workspace }}/shell/custom2-packages.sh" ./shell/
             echo "✅ 已复制 custom-packages.sh"
           else
             # 创建默认的 custom-packages.sh
-            cat > ./shell/custom-packages.sh << 'EOF'
+            cat > ./shell/custom2-packages.sh << 'EOF'
           
           # 复制 build24.sh 到 ImageBuilder 目录
           if [ -f "${{ github.workspace }}/mediatek-filogic/build24.sh" ]; then
@@ -213,8 +207,8 @@ jobs:
             fi
             
             # 自定义包
-            if [ -f "${{ github.workspace }}/shell/custom-packages.sh" ]; then
-              source ${{ github.workspace }}/shell/custom-packages.sh
+            if [ -f "${{ github.workspace }}/shell/custom2-packages.sh" ]; then
+              source ${{ github.workspace }}/shell/custom2-packages.sh
               PACKAGES="$PACKAGES $CUSTOM_PACKAGES"
             fi
             
