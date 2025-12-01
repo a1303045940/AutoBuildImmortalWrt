@@ -1,4 +1,4 @@
-name: Build 新KWRT
+name: Build KWRT
 
 on:
   workflow_dispatch:
@@ -100,6 +100,47 @@ jobs:
           platform="mediatek/filogic"
           download_url="https://dl.openwrt.ai/releases/${{ env.KWRT_VERSION }}/targets/mediatek/filogic/kwrt-imagebuilder-mediatek-filogic.Linux-x86_64.tar.zst"
           
+          # 读取 ipq807x 机型
+          if [ -f model/ipq807x.txt ]; then
+            ipq807x_models=$(cat model/ipq807x.txt | tr '\n' '|')
+            ipq807x_models=${ipq807x_models%|}
+            if [[ "$profile" =~ ^($ipq807x_models)$ ]]; then
+              platform="qualcommax/ipq807x"
+              download_url="https://dl.openwrt.ai/releases/${{ env.KWRT_VERSION }}/targets/qualcommax/ipq807x/kwrt-imagebuilder-qualcommax-ipq807x.Linux-x86_64.tar.zst"
+            fi
+          fi
+          
+          # 读取 mt7621 机型
+          if [ -f model/mt7621.txt ]; then
+            mt7621_models=$(cat model/mt7621.txt | tr '\n' '|')
+            mt7621_models=${mt7621_models%|}
+            if [[ "$profile" =~ ^($mt7621_models)$ ]]; then
+              platform="ramips/mt7621"
+              download_url="https://dl.openwrt.ai/releases/${{ env.KWRT_VERSION }}/targets/ramips/mt7621/kwrt-imagebuilder-ramips-mt7621.Linux-x86_64.tar.zst"
+            fi
+          fi
+          
+          # 读取 bcm53xx 机型
+          if [ -f model/bcm53xx.txt ]; then
+            bcm53xx_models=$(cat model/bcm53xx.txt | tr '\n' '|')
+            bcm53xx_models=${bcm53xx_models%|}
+            if [[ "$profile" =~ ^($bcm53xx_models)$ ]]; then
+              platform="bcm53xx/generic"
+              download_url="https://dl.openwrt.ai/releases/${{ env.KWRT_VERSION }}/targets/bcm53xx/generic/kwrt-imagebuilder-bcm53xx-generic.Linux-x86_64.tar.zst"
+            fi
+          fi
+          
+          # 特殊机型处理
+          case "$profile" in
+            glinet_gl-b2200)
+              platform="ipq40xx/generic"
+              download_url="https://dl.openwrt.ai/releases/${{ env.KWRT_VERSION }}/targets/ipq40xx/generic/kwrt-imagebuilder-ipq40xx-generic.Linux-x86_64.tar.zst"
+              ;;
+            glinet_gl-axt1800|glinet_gl-ax1800)
+              platform="qualcommax/ipq60xx"
+              download_url="https://dl.openwrt.ai/releases/${{ env.KWRT_VERSION }}/targets/qualcommax/ipq60xx/kwrt-imagebuilder-qualcommax-ipq60xx.Linux-x86_64.tar.zst"
+              ;;
+          esac
           
           echo "platform=$platform" >> $GITHUB_ENV
           echo "PLATFORM=$platform" >> $GITHUB_ENV
@@ -147,6 +188,24 @@ jobs:
             echo "✅ 已复制 arch.conf"
           fi
 
+      - name: Configure repositories
+        run: |
+          cd ${{ env.IMAGE_BUILDER_DIR }}
+          
+          echo "🔧 配置软件源..."
+          # 修改 Kwrt 软件源为在线地址
+          sed -i 's|file://www/wwwroot/|https://|g' repositories.conf
+          sed -i 's|src |src/gz |g' repositories.conf
+          
+          # 添加 OpenWrt 官方源作为补充
+          echo "" >> repositories.conf
+          echo "# OpenWrt official repo for missing packages" >> repositories.conf
+          echo "src/gz openwrt_packages https://downloads.openwrt.org/releases/${{ env.KWRT_PACKAGE_VERSION }}/packages/aarch64_cortex-a53/packages" >> repositories.conf
+          echo "src/gz openwrt_luci https://downloads.openwrt.org/releases/${{ env.KWRT_PACKAGE_VERSION }}/packages/aarch64_cortex-a53/luci" >> repositories.conf
+          
+          echo "📄 repositories.conf 内容:"
+          cat repositories.conf
+
       - name: Build firmware with Kwrt ImageBuilder
         run: |
           cd ${{ env.IMAGE_BUILDER_DIR }}
@@ -167,8 +226,8 @@ jobs:
           fi
           
           # 如果有自定义包配置
-          if [ -f "${{ github.workspace }}/shell/custom2-packages.sh" ]; then
-            source ${{ github.workspace }}/shell/custom2-packages.sh
+          if [ -f "${{ github.workspace }}/shell/custom-packages.sh" ]; then
+            source ${{ github.workspace }}/shell/custom-packages.sh
             PACKAGES="$PACKAGES $CUSTOM_PACKAGES"
           fi
           
