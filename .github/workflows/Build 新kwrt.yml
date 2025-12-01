@@ -158,9 +158,9 @@ jobs:
           # 如果源仓库有 custom-packages.sh,复制它
           if [ -f "${{ github.workspace }}/shell/custom2-packages.sh" ]; then
             cp "${{ github.workspace }}/shell/custom2-packages.sh" ./shell/
-            echo "✅ 已复制 custom-packages.sh"
+            echo "✅ 已复制 custom2-packages.sh"
           else
-            # 创建默认的 custom-packages.sh
+            # 创建默认的 custom2-packages.sh
             cat > ./shell/custom2-packages.sh << 'EOF'
           
           # 复制 build24.sh 到 ImageBuilder 目录
