@@ -155,7 +155,8 @@ jobs:
           
           filename=$(basename ${{ env.download_url }})
           echo "📦 Extracting $filename..."
-          tar --zstd -xf $filename
+          tar -xzf "$filename"
+          #tar --zstd -xf $filename
           
           # 获取解压后的目录名
           builder_dir=$(tar --zstd -tf $filename | head -1 | cut -f1 -d"/")
