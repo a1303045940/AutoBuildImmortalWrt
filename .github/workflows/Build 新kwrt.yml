@@ -155,8 +155,16 @@ jobs:
           
           filename=$(basename ${{ env.download_url }})
           echo "📦 Extracting $filename..."
-          tar -xzf "$filename"
-          #tar --zstd -xf $filename
+          # 简单判断
+          if [[ "$filename" =~ \.tar\.gz$ ]]; then
+            tar -xzf "$filename"
+            
+          elif [[ "$filename" =~ \.tar\.zst$ ]]; then
+            tar --zstd -xf "$filename"
+          else
+            echo "❌ 不支持的格式"
+            exit 1
+          fi
           
           # 获取解压后的目录名
           builder_dir=$(tar --zstd -tf $filename | head -1 | cut -f1 -d"/")
