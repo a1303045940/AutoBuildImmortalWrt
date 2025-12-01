@@ -43,7 +43,7 @@ on:
           - xiaomi_ax9000-stock
           - cmcc_a10-stock
           - cmcc_a10-ubootmod
-          - cmcc_rax3000m
+          - cmcc_rax3000m-nand
           - cmcc_rax3000me
           - clt_r30b1
           - cmcc_rax3000m-emmc-ubootmod
@@ -461,7 +461,7 @@ on:
           - netgear_r8000
           - smartrg_sr400ac
           - tenda_ac9
-        default: cmcc_rax3000me
+        default: cmcc_rax3000m-nand
       custom_router_ip:
         description: "请设置路由器的管理地址 格式:192.168.x.1 或 10.x.x.1"
         required: true
