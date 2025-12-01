@@ -1,0 +1,333 @@
+name: Build 新kwrt
+
+on:
+  workflow_dispatch:
+    inputs:
+      profile:
+        type: choice
+        description: "请选择mtk路由器型号"
+        required: true
+        options:
+          - sl_3000-emmc
+          - cmcc_rax3000m-nand
+          
+        default: sl_3000-emmc
+      custom_router_ip:
+        description: "请设置路由器的管理地址 格式:192.168.x.1 或 10.x.x.1"
+        required: true
+        default: "192.168.6.1"
+      enable_store:
+        description: "集成 store 商店"
+        required: false
+        type: boolean
+        default: true
+      include_docker:
+        description: "是否编译 Docker 插件"
+        required: true
+        default: 'no'
+        type: choice
+        options:
+          - 'yes'
+          - 'no'
+      enable_pppoe:
+        description: "是否配置PPPoE拨号信息?"
+        required: true
+        default: 'no'
+        type: choice
+        options:
+          - 'yes'
+          - 'no'
+      pppoe_account:
+        description: "宽带账号 (若启用PPPoE)"
+        required: false
+      pppoe_password:
+        description: "宽带密码 (若启用PPPoE)"
+        required: false
+
+env:
+  KWRT_VERSION: "24.10"
+  KWRT_PACKAGE_VERSION: "24.10.4"
+  IMAGE_BUILDER_DIR: ""
+  BUILD_TARGET_DIR: ""
+  PLATFORM: ""
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wget zstd
+
+      - name: Set executable permissions
+        run: |
+          chmod +x ${{ github.workspace }}/mediatek-filogic/build24.sh || true
+          chmod +x ${{ github.workspace }}/shell/*.sh || true
+
+      - name: Save Custom Router IP
+        run: |
+          mkdir -p "${{ github.workspace }}/custom"
+          echo "${{ github.event.inputs.custom_router_ip }}" > "${{ github.workspace }}/custom/custom_router_ip.txt"
+          echo "✅ 路由器管理地址: ${{ github.event.inputs.custom_router_ip }}"
+
+      - name: Validate PPPoE Inputs
+        run: |
+          if [[ "${{ inputs.enable_pppoe }}" == "yes" ]]; then
+            if [[ -z "${{ inputs.pppoe_account }}" || -z "${{ inputs.pppoe_password }}" ]]; then
+              echo "❌ Error: PPPoE account and password must be provided!"
+              exit 1
+            fi
+            echo "✅ PPPoE 配置有效"
+          fi
+
+      - name: Enable Store integration
+        run: |
+          mkdir -p shell
+          if [ "${{ github.event.inputs.enable_store }}" == "true" ]; then
+            echo 'CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-store"' >> shell/custom-packages.sh
+            echo "✅ 已追加 luci-app-store"
+          else
+            echo "❎ 未启用 luci-app-store"
+          fi
+
+      - name: Determine platform and download URL
+        id: setup
+        run: |
+          profile="${{ github.event.inputs.profile }}"
+          echo "🔧 Building for profile: $profile"
+          
+          # 默认平台
+          platform="mediatek/filogic"
+          download_url="https://dl.openwrt.ai/releases/${{ env.KWRT_VERSION }}/targets/mediatek/filogic/kwrt-imagebuilder-mediatek-filogic.Linux-x86_64.tar.zst"
+          
+          echo "platform=$platform" >> $GITHUB_ENV
+          echo "PLATFORM=$platform" >> $GITHUB_ENV
+          echo "download_url=$download_url" >> $GITHUB_ENV
+          echo "📦 Platform: $platform"
+          echo "🔗 Download URL: $download_url"
+
+      - name: Download and extract Kwrt ImageBuilder
+        run: |
+          echo "⬇️  Downloading Kwrt ImageBuilder..."
+          wget -q --show-progress ${{ env.download_url }}
+          
+          filename=$(basename ${{ env.download_url }})
+          echo "📦 Extracting $filename..."
+          tar --zstd -xf $filename
+          
+          # 获取解压后的目录名
+          builder_dir=$(tar --zstd -tf $filename | head -1 | cut -f1 -d"/")
+          echo "IMAGE_BUILDER_DIR=$builder_dir" >> $GITHUB_ENV
+          echo "BUILD_TARGET_DIR=$builder_dir/bin/targets/${{ env.PLATFORM }}" >> $GITHUB_ENV
+          echo "✅ ImageBuilder 已解压到: $builder_dir"
+
+      - name: Prepare custom files
+        run: |
+          cd ${{ env.IMAGE_BUILDER_DIR }}
+          
+          # 创建自定义文件目录
+          mkdir -p files/etc/uci-defaults files/etc/config
+          
+          # 复制自定义配置
+          if [ -d "${{ github.workspace }}/glinet" ]; then
+            cp -r ${{ github.workspace }}/glinet/* files/etc/uci-defaults/ 2>/dev/null || true
+            echo "✅ 已复制 glinet 配置"
+          fi
+          
+          if [ -d "${{ github.workspace }}/custom" ]; then
+            cp -r ${{ github.workspace }}/custom/* files/etc/config/ 2>/dev/null || true
+            echo "✅ 已复制 custom 配置"
+          fi
+          
+          # 复制架构配置
+          if [ -f "${{ github.workspace }}/arch/arch.conf" ]; then
+            mkdir -p files/etc/opkg
+            cp ${{ github.workspace }}/arch/arch.conf files/etc/opkg/arch.conf
+            echo "✅ 已复制 arch.conf"
+          fi
+
+      - name: Configure repositories
+        run: |
+          cd ${{ env.IMAGE_BUILDER_DIR }}
+          
+          echo "🔧 配置软件源..."
+          # 修改 Kwrt 软件源为在线地址
+          sed -i 's|file://www/wwwroot/|https://|g' repositories.conf
+          sed -i 's|src |src/gz |g' repositories.conf
+          
+          # 添加 OpenWrt 官方源作为补充
+          echo "" >> repositories.conf
+          echo "# OpenWrt official repo for missing packages" >> repositories.conf
+          echo "src/gz openwrt_packages https://downloads.openwrt.org/releases/${{ env.KWRT_PACKAGE_VERSION }}/packages/aarch64_cortex-a53/packages" >> repositories.conf
+          echo "src/gz openwrt_luci https://downloads.openwrt.org/releases/${{ env.KWRT_PACKAGE_VERSION }}/packages/aarch64_cortex-a53/luci" >> repositories.conf
+          
+          echo "📄 repositories.conf 内容:"
+          cat repositories.conf
+
+      - name: Run build24.sh script
+        run: |
+          cd ${{ env.IMAGE_BUILDER_DIR }}
+          
+          # 复制 build24.sh 到 ImageBuilder 目录
+          if [ -f "${{ github.workspace }}/mediatek-filogic/build24.sh" ]; then
+            cp "${{ github.workspace }}/mediatek-filogic/build24.sh" ./build.sh
+            chmod +x ./build.sh
+            echo "✅ 已复制 build24.sh"
+          else
+            echo "⚠️  未找到 build24.sh,使用默认构建"
+          fi
+          
+          # 设置环境变量供脚本使用
+          export PROFILE="${{ github.event.inputs.profile }}"
+          export INCLUDE_DOCKER="${{ github.event.inputs.include_docker }}"
+          export ENABLE_PPPOE="${{ inputs.enable_pppoe }}"
+          export PPPOE_ACCOUNT="${{ inputs.pppoe_account }}"
+          export PPPOE_PASSWORD="${{ inputs.pppoe_password }}"
+          
+          # 如果 build.sh 存在,执行它
+          if [ -f "./build.sh" ]; then
+            echo "🚀 执行 build24.sh 脚本..."
+            bash ./build.sh
+          else
+            # 默认构建逻辑
+            echo "🚀 使用默认构建流程..."
+            
+            # 基础软件包
+            PACKAGES="luci luci-ssl-openssl luci-compat"
+            PACKAGES="$PACKAGES base-files busybox dnsmasq-full firewall4"
+            PACKAGES="$PACKAGES autocore bash htop nano wget-ssl curl"
+            PACKAGES="$PACKAGES automount block-mount kmod-usb-storage"
+            PACKAGES="$PACKAGES kmod-fs-ext4 kmod-fs-exfat kmod-fs-vfat"
+            
+            # Docker 支持
+            if [ "$INCLUDE_DOCKER" == "yes" ]; then
+              PACKAGES="$PACKAGES docker dockerd luci-app-dockerman"
+              echo "✅ 已添加 Docker 支持"
+            fi
+            
+            # Store 商店
+            if [ "${{ github.event.inputs.enable_store }}" == "true" ]; then
+              PACKAGES="$PACKAGES luci-app-store"
+              echo "✅ 已添加 Store 商店"
+            fi
+            
+            # 自定义包
+            if [ -f "${{ github.workspace }}/shell/custom-packages.sh" ]; then
+              source ${{ github.workspace }}/shell/custom-packages.sh
+              PACKAGES="$PACKAGES $CUSTOM_PACKAGES"
+            fi
+            
+            echo "📦 软件包列表: $PACKAGES"
+            
+            # 构建固件
+            make image \
+              PROFILE="$PROFILE" \
+              PACKAGES="$PACKAGES" \
+              FILES="files" \
+              DISABLED_SERVICES="https-dns-proxy"
+          fi
+          
+          echo "✅ 固件构建完成!"
+          ls -lh bin/targets/${{ env.PLATFORM }}/
+
+      - name: Verify firmware output
+        run: |
+          echo "🔍 验证构建产物..."
+          
+          BUILD_DIR="${{ env.BUILD_TARGET_DIR }}"
+          
+          if [ ! -d "$BUILD_DIR" ]; then
+            echo "❌ 构建目录不存在: $BUILD_DIR"
+            exit 1
+          fi
+          
+          echo "📊 固件文件列表:"
+          ls -lh "$BUILD_DIR"
+          
+          # 检查 sysupgrade 文件
+          SYSUPGRADE=$(find "$BUILD_DIR" -name "*-sysupgrade.bin" | head -1)
+          if [ -n "$SYSUPGRADE" ]; then
+            FILE_SIZE=$(stat -c%s "$SYSUPGRADE")
+            FILE_SIZE_MB=$((FILE_SIZE / 1024 / 1024))
+            echo "✅ Sysupgrade 固件: $(basename $SYSUPGRADE) (${FILE_SIZE_MB}MB)"
+            
+            if [ $FILE_SIZE_MB -lt 10 ]; then
+              echo "⚠️  警告: 固件大小异常小 (${FILE_SIZE_MB}MB)"
+            fi
+          else
+            echo "⚠️  未找到 sysupgrade 固件"
+          fi
+          
+          # 显示 manifest
+          MANIFEST=$(find "$BUILD_DIR" -name "*.manifest" | head -1)
+          if [ -n "$MANIFEST" ]; then
+            PKG_COUNT=$(wc -l < "$MANIFEST")
+            echo "📦 已安装软件包数量: $PKG_COUNT"
+          fi
+
+      - name: Configure PPPoE (if enabled)
+        if: ${{ inputs.enable_pppoe == 'yes' }}
+        run: |
+          echo "🔧 后处理 PPPoE 配置..."
+          echo "账号: ${{ inputs.pppoe_account }}"
+
+      - name: Create release info
+        run: |
+          INFO_FILE="${{ github.workspace }}/mediatek-filogic/info.md"
+          
+          mkdir -p $(dirname "$INFO_FILE")
+          cat > "$INFO_FILE" << EOF
+          ## 🎉 Kwrt 固件构建信息
+          
+          ### 基本信息
+          - **构建平台**: \`${{ env.PLATFORM }}\`
+          - **设备型号**: \`${{ github.event.inputs.profile }}\`
+          - **Kwrt 版本**: \`${{ env.KWRT_VERSION }}\`
+          - **管理地址**: \`${{ github.event.inputs.custom_router_ip }}\`
+          - **构建时间**: \`$(date '+%Y-%m-%d %H:%M:%S')\`
+          
+          ### 功能特性
+          - **Docker 支持**: ${{ github.event.inputs.include_docker == 'yes' && '✅ 已启用' || '❌ 未启用' }}
+          - **Store 商店**: ${{ github.event.inputs.enable_store == 'true' && '✅ 已启用' || '❌ 未启用' }}
+          - **PPPoE 拨号**: ${{ inputs.enable_pppoe == 'yes' && '✅ 已配置' || '❌ 未配置' }}
+          
+          ### 下载说明
+          - \`*-squashfs-sysupgrade.bin\`: 系统升级固件 (已有 OpenWrt 系统使用)
+          - \`*-factory.bin\`: 初次刷机固件 (从原厂固件刷入)
+          - \`sha256sums\`: 文件校验和
+          
+          ### 默认信息
+          - 管理地址: http://${{ github.event.inputs.custom_router_ip }}
+          - 默认用户名: root
+          - 默认密码: password
+          EOF
+          
+          echo "📄 Release 信息已生成"
+
+      - name: Upload firmware to Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.profile }}-${{ github.run_number }}
+          name: "Kwrt-${{ github.event.inputs.profile }}"
+          body_path: ${{ github.workspace }}/mediatek-filogic/info.md
+          files: |
+            ${{ env.BUILD_TARGET_DIR }}/*
+          token: ${{ secrets.GITHUB_TOKEN }}
+          makeLatest: true
+          allowUpdates: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload firmware as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Kwrt-${{ github.event.inputs.profile }}
+          path: ${{ env.BUILD_TARGET_DIR }}
+          retention-days: 7
