@@ -1,4 +1,4 @@
-name: Build KWRT
+name: Build 新KWRT
 
 on:
   workflow_dispatch:
