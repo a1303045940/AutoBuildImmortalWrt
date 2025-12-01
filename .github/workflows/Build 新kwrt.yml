@@ -153,9 +153,21 @@ jobs:
             echo "✅ 已复制 arch.conf"
           fi
 
+            cat > ./shell/custom-packages.sh << 'EOF'
+
       - name: Run build24.sh script
         run: |
           cd ${{ env.IMAGE_BUILDER_DIR }}
+
+          # 确保 shell 目录存在
+          mkdir -p shell
+          # 如果源仓库有 custom-packages.sh,复制它
+          if [ -f "${{ github.workspace }}/shell/custom-packages.sh" ]; then
+            cp "${{ github.workspace }}/shell/custom-packages.sh" ./shell/
+            echo "✅ 已复制 custom-packages.sh"
+          else
+            # 创建默认的 custom-packages.sh
+            cat > ./shell/custom-packages.sh << 'EOF'
           
           # 复制 build24.sh 到 ImageBuilder 目录
           if [ -f "${{ github.workspace }}/mediatek-filogic/build24.sh" ]; then
