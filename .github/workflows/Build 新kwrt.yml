@@ -63,7 +63,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y wget zstd
+          sudo apt-get install -y wget zstd tree
 
       - name: Save Custom Router IP
         run: |
@@ -155,10 +155,9 @@ jobs:
           
           filename=$(basename ${{ env.download_url }})
           echo "📦 Extracting $filename..."
-          # 简单判断
+          
           if [[ "$filename" =~ \.tar\.gz$ ]]; then
             tar -xzf "$filename"
-            
           elif [[ "$filename" =~ \.tar\.zst$ ]]; then
             tar --zstd -xf "$filename"
           else
@@ -176,32 +175,47 @@ jobs:
         run: |
           cd ${{ env.IMAGE_BUILDER_DIR }}
           
-          # 创建自定义文件目录
-          mkdir -p files/etc/uci-defaults files/etc/config
-
-          # 复制 99-custom.sh 脚本
-          cp ${{ github.workspace }}/files/etc/uci-defaults/99-custom.sh files/etc/uci-defaults/99-custom.sh
-
-          chmod +x files/etc/uci-defaults/99-custom.sh
-          echo "✅ 已复制 99-custom.sh 配置"
+          echo "================================================"
+          echo "准备自定义文件"
+          echo "================================================"
           
-          # 复制自定义配置
+          # 创建目录
+          mkdir -p files/etc/uci-defaults files/etc/config
+          
+          # 1. 复制 99-custom.sh
+          if [ -f "${{ github.workspace }}/files/etc/uci-defaults/99-custom.sh" ]; then
+            cp ${{ github.workspace }}/files/etc/uci-defaults/99-custom.sh files/etc/uci-defaults/
+            chmod +x files/etc/uci-defaults/99-custom.sh
+            echo "✅ 已复制 99-custom.sh"
+          fi
+          
+          # 2. 创建 PPPoE 配置
+          cat > files/etc/config/pppoe-settings << 'EOF'
+enable_pppoe=${{ github.event.inputs.enable_pppoe }}
+pppoe_account=${{ github.event.inputs.pppoe_account }}
+pppoe_password=${{ github.event.inputs.pppoe_password }}
+EOF
+          echo "✅ 已创建 pppoe-settings"
+          
+          # 3. 复制路由器 IP
+          if [ -f "${{ github.workspace }}/custom/custom_router_ip.txt" ]; then
+            cp ${{ github.workspace }}/custom/custom_router_ip.txt files/etc/config/
+            echo "✅ 已复制路由器 IP 配置"
+          fi
+          
+          # 4. 复制其他配置
           if [ -d "${{ github.workspace }}/glinet" ]; then
             cp -r ${{ github.workspace }}/glinet/* files/etc/uci-defaults/ 2>/dev/null || true
-            echo "✅ 已复制 glinet 配置"
           fi
           
-          if [ -d "${{ github.workspace }}/custom" ]; then
-            cp -r ${{ github.workspace }}/custom/* files/etc/config/ 2>/dev/null || true
-            echo "✅ 已复制 custom 配置"
-          fi
-          
-          # 复制架构配置
           if [ -f "${{ github.workspace }}/arch/arch.conf" ]; then
             mkdir -p files/etc/opkg
             cp ${{ github.workspace }}/arch/arch.conf files/etc/opkg/arch.conf
-            echo "✅ 已复制 arch.conf"
           fi
+          
+          # 显示文件结构
+          echo "📂 files 目录结构:"
+          tree files/ || find files -type f
           
       - name: Configure repositories
         run: |
@@ -217,100 +231,76 @@ jobs:
           # 移除失效源
           sed -i '/kiddin9/d' repositories.conf
           
+          echo "================================================"
           echo "📄 repositories.conf:"
+          echo "================================================"
           cat repositories.conf
+          echo "================================================"
           
       - name: Build firmware with Kwrt ImageBuilder
         run: |
           cd ${{ env.IMAGE_BUILDER_DIR }}
           
-          # 基础软件包（只用肯定存在的）
+          echo "================================================"
+          echo "开始构建固件"
+          echo "================================================"
+          
+          # 基础软件包
           PACKAGES="luci luci-ssl-openssl luci-i18n-base-zh-cn luci-i18n-firewall-zh-cn"
           
           # Docker
           if [ "${{ github.event.inputs.include_docker }}" == "yes" ]; then
             PACKAGES="$PACKAGES luci-app-dockerman luci-i18n-dockerman-zh-cn docker dockerd"
+            echo "✅ 已添加 Docker"
           fi
           
-          # 自定义包（从 custom-packages.sh）
+          # Store
+          if [ "${{ github.event.inputs.enable_store }}" == "true" ]; then
+            PACKAGES="$PACKAGES luci-app-store"
+            echo "✅ 已添加 Store"
+          fi
+          
+          # 自定义包
           if [ -f "${{ github.workspace }}/shell/custom-packages.sh" ]; then
             source ${{ github.workspace }}/shell/custom-packages.sh
             PACKAGES="$PACKAGES $CUSTOM_PACKAGES"
+            echo "✅ 已添加自定义包"
           fi
           
+          echo "================================================"
           echo "📦 软件包列表:"
           echo "$PACKAGES" | tr ' ' '\n'
+          echo "================================================"
           
-          # 构建（添加错误处理）
+          # 构建
+          echo "🚀 执行构建..."
           make image \
             PROFILE="${{ github.event.inputs.profile }}" \
             PACKAGES="$PACKAGES" \
             FILES="files" \
             DISABLED_SERVICES="https-dns-proxy" 2>&1 | tee build.log
           
-          # 检查是否有包安装失败
+          # 检查错误
           if grep -q "satisfy_dependencies" build.log; then
-            echo "⚠️ 检测到依赖问题，查看详细错误:"
+            echo "⚠️ 依赖问题:"
             grep "satisfy_dependencies" build.log
           fi
           
+          echo "================================================"
+          echo "✅ 构建完成"
+          echo "================================================"
           ls -lh bin/targets/${{ env.PLATFORM }}/
 
-
-
-      - name: Build firmware with Kwrt ImageBuilder
+      - name: Verify build results
         run: |
-          cd ${{ env.IMAGE_BUILDER_DIR }}
+          cd ${{ env.BUILD_TARGET_DIR }}
           
-          # 基础软件包列表
-          PACKAGES="luci luci-ssl-openssl luci-base luci-compat"
+          echo "📋 生成的文件:"
+          ls -lh
           
-          # Docker 支持
-          if [ "${{ github.event.inputs.include_docker }}" == "yes" ]; then
-            PACKAGES="$PACKAGES docker dockerd luci-app-dockerman"
-            echo "✅ 已添加 Docker 支持"
-          fi
-          
-          # Store 商店
-          if [ "${{ github.event.inputs.enable_store }}" == "true" ]; then
-            PACKAGES="$PACKAGES luci-app-store"
-            echo "✅ 已添加 Store 商店"
-          fi
-          
-          # 如果有自定义包配置
-          if [ -f "${{ github.workspace }}/shell/custom-packages.sh" ]; then
-            source ${{ github.workspace }}/shell/custom-packages.sh
-            PACKAGES="$PACKAGES $CUSTOM_PACKAGES"
-          fi
-          
-          echo "📦 软件包列表: $PACKAGES"
-          
-          # 禁用的服务
-          DISABLED_SERVICES="https-dns-proxy"
-          
-          echo "🚀 开始构建固件..."
-          make image \
-            PROFILE="${{ github.event.inputs.profile }}" \
-            PACKAGES="$PACKAGES" \
-            FILES="files" \
-            DISABLED_SERVICES="$DISABLED_SERVICES"
-          
-          echo "✅ 固件构建完成!"
-          ls -lh bin/targets/${{ env.PLATFORM }}/
-
-      - name: Configure PPPoE (if enabled)
-        if: ${{ inputs.enable_pppoe == 'yes' }}
-        run: |
-          cd ${{ env.IMAGE_BUILDER_DIR }}
-          
-          echo "🔧 配置 PPPoE 拨号..."
-          mkdir -p files/etc/config
-          cat > files/etc/config/pppoe-config << EOF
-          # PPPoE Configuration
-          ACCOUNT=${{ inputs.pppoe_account }}
-          PASSWORD=${{ inputs.pppoe_password }}
-          EOF
-          echo "✅ PPPoE 配置已保存"
+          echo ""
+          echo "📦 固件大小:"
+          du -h *.bin 2>/dev/null || echo "未找到 .bin 文件"
 
       - name: Create release info
         run: |
@@ -328,16 +318,17 @@ jobs:
           - **Docker 支持**: ${{ github.event.inputs.include_docker == 'yes' && '✅ 已启用' || '❌ 未启用' }}
           - **Store 商店**: ${{ github.event.inputs.enable_store == 'true' && '✅ 已启用' || '❌ 未启用' }}
           - **PPPoE 拨号**: ${{ inputs.enable_pppoe == 'yes' && '✅ 已配置' || '❌ 未配置' }}
+          - **uci-defaults**: ✅ 已集成 (首次启动自动执行)
           
           ### 下载说明
-          - \`*-squashfs-sysupgrade.bin\`: 系统升级固件 (已有 OpenWrt 系统使用)
-          - \`*-factory.bin\`: 初次刷机固件 (从原厂固件刷入)
+          - \`*-squashfs-sysupgrade.bin\`: 系统升级固件
+          - \`*-factory.bin\`: 初次刷机固件
           - \`sha256sums\`: 文件校验和
           
           ### 默认信息
           - 管理地址: http://${{ github.event.inputs.custom_router_ip }}
           - 默认用户名: root
-          - 默认密码: password (首次登录需修改)
+          - 默认密码: password
           EOF
           
           cat release-info.md
@@ -346,17 +337,16 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.event.inputs.profile }}-${{ github.run_number }}
-          name: "Kwrt-${{ github.event.inputs.profile }}"
+          name: "Kwrt-${{ github.event.inputs.profile }}-$(date +'%Y%m%d')"
           body_path: release-info.md
           files: |
-            ${{ env.BUILD_TARGET_DIR }}/*
+            ${{ env.BUILD_TARGET_DIR }}/*.bin
+            ${{ env.BUILD_TARGET_DIR }}/sha256sums
           token: ${{ secrets.GITHUB_TOKEN }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload firmware as artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Kwrt-${{ github.event.inputs.profile }}
+          name: Kwrt-${{ github.event.inputs.profile }}-${{ github.run_number }}
           path: ${{ env.BUILD_TARGET_DIR }}
           retention-days: 7
