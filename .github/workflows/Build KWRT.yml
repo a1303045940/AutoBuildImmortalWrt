@@ -313,7 +313,8 @@ jobs:
             PROFILE="${{ github.event.inputs.profile }}" \
             PACKAGES="$PACKAGES" \
             FILES="files" \
-            DISABLED_SERVICES="$DISABLED_SERVICES"
+            DISABLED_SERVICES="$DISABLED_SERVICES" \
+            --force-depends -j$(nproc)
           
           echo "================================================"
           echo "✅ 固件构建完成!"
