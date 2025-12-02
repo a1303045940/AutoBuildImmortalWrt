@@ -180,8 +180,10 @@ jobs:
           mkdir -p files/etc/uci-defaults files/etc/config
 
           # 复制 99-custom.sh 脚本
-          cp ${{ github.workspace }}/files/etc/uci-defaults/99-custom.sh files/etc/uci-defaults/
+          cp ${{ github.workspace }}/files/etc/uci-defaults/99-custom.sh files/etc/uci-defaults/99-custom.sh
+
           chmod +x files/etc/uci-defaults/99-custom.sh
+          echo "✅ 已复制 99-custom.sh 配置"
           
           # 复制自定义配置
           if [ -d "${{ github.workspace }}/glinet" ]; then
