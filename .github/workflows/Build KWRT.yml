@@ -261,8 +261,8 @@ jobs:
           # 添加 OpenWrt 官方源作为补充
           echo "" >> repositories.conf
           echo "# OpenWrt official repo for missing packages" >> repositories.conf
-          echo "src/gz openwrt_packages https://downloads.openwrt.org/releases/${{ env.KWRT_PACKAGE_VERSION }}/packages/aarch64_cortex-a53/packages" >> repositories.conf
-          echo "src/gz openwrt_luci https://downloads.openwrt.org/releases/${{ env.KWRT_PACKAGE_VERSION }}/packages/aarch64_cortex-a53/luci" >> repositories.conf
+          echo "src/gz openwrt_packages https://downloads.openwrt.org/releases/${{ env.KWRT_VERSION }}/packages/aarch64_cortex-a53/packages" >> repositories.conf
+          echo "src/gz openwrt_luci https://downloads.openwrt.org/releases/${{ env.KWRT_VERSION }}/packages/aarch64_cortex-a53/luci" >> repositories.conf
           
           echo "📄 repositories.conf 内容:"
           cat repositories.conf
