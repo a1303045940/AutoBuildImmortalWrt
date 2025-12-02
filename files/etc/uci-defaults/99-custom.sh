@@ -91,6 +91,25 @@ elif [ "$count" -gt 1 ]; then
         echo "default router ip is 192.168.100.1" >> $LOGFILE
     fi
 
+   
+    uci set system.@system[0].version="by 微信:Mr___zjz/OpenWrt 24.10.4"
+    uci set system.@system[0].hostname="Openwrt"
+    uci set wireless.@wifi-iface[0].ssid="OpenWrt-2.4G"
+    uci set wireless.@wifi-iface[1].ssid="OpenWrt-5G"
+    uci set wireless.@wifi-iface[0].encryption='psk2'
+    uci set wireless.@wifi-iface[0].key='password'
+    uci set wireless.@wifi-iface[1].encryption='psk2'
+    uci set wireless.@wifi-iface[1].key='password'
+    
+    root_password="password"
+    if [ -n "$root_password" ]; then
+      (echo "$root_password"; sleep 1; echo "$root_password") | passwd > /dev/null
+    fi
+    echo "All done!"
+    uci commit
+
+
+
 
     # 判断是否启用 PPPoE
     echo "print enable_pppoe value=== $enable_pppoe" >>$LOGFILE
