@@ -217,25 +217,25 @@ jobs:
           echo "📂 files 目录结构:"
           tree files/ || find files -type f
           
-      - name: Configure repositories
-        run: |
-          cd ${{ env.IMAGE_BUILDER_DIR }}
+      # - name: Configure repositories
+      #   run: |
+      #     cd ${{ env.IMAGE_BUILDER_DIR }}
           
-          echo "🔧 配置软件源..."
-          cp repositories.conf repositories.conf.bak
+      #     echo "🔧 配置软件源..."
+      #     cp repositories.conf repositories.conf.bak
           
-          # 修改为在线源
-          sed -i 's|file://www/wwwroot/|https://|g' repositories.conf
-          sed -i 's|src |src/gz |g' repositories.conf
+      #     # 修改为在线源
+      #     sed -i 's|file://www/wwwroot/|https://|g' repositories.conf
+      #     sed -i 's|src |src/gz |g' repositories.conf
           
-          # 移除失效源
-          #sed -i '/kiddin9/d' repositories.conf
+      #     # 移除失效源
+      #     #sed -i '/kiddin9/d' repositories.conf
           
-          echo "================================================"
-          echo "📄 repositories.conf:"
-          echo "================================================"
-          cat repositories.conf
-          echo "================================================"
+      #     echo "================================================"
+      #     echo "📄 repositories.conf:"
+      #     echo "================================================"
+      #     cat repositories.conf
+      #     echo "================================================"
           
       - name: Build firmware with Kwrt ImageBuilder
         run: |
