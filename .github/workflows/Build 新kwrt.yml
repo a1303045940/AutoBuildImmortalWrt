@@ -126,7 +126,7 @@ jobs:
             bcm53xx_models=${bcm53xx_models%|}
             if [[ "$profile" =~ ^($bcm53xx_models)$ ]]; then
               platform="bcm53xx/generic"
-              download_url="https://dl.openwrt.ai/releases/${{ env.KWRT_VERSION }}/targets/bcm53xx/generic/kwrt-imagebuilder-bcm53xx-generic.Linux-x86_64.tar.zst"
+              download_url="https://github.com/a1303045940/Kwrt/releases/download/12%2F02_2025_15%2F20_mediatek_filogic/openwrt-imagebuilder-mediatek-filogic.Linux-x86_64.tar.zst"
             fi
           fi
           
