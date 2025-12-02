@@ -183,19 +183,19 @@ jobs:
           mkdir -p files/etc/uci-defaults files/etc/config
           
           # ============================================
-          # 1. 复制 99-custom.sh 脚本
-          # ============================================
-          echo "📄 复制 uci-defaults 脚本..."
-          if [ -f "${{ github.workspace }}/files/etc/uci-defaults/99-custom.sh" ]; then
-            cp ${{ github.workspace }}/files/etc/uci-defaults/99-custom.sh \
-               files/etc/uci-defaults/99-custom.sh
-            chmod +x files/etc/uci-defaults/99-custom.sh
-            echo "✅ 已复制 99-custom.sh"
-            echo "📋 脚本大小: $(du -h files/etc/uci-defaults/99-custom.sh | cut -f1)"
-          else
-            echo "❌ 错误: 未找到源文件 ${{ github.workspace }}/files/etc/uci-defaults/99-custom.sh"
-            exit 1
-          fi
+          # # 1. 复制 99-custom.sh 脚本  
+          # # ============================================
+          # echo "📄 复制 uci-defaults 脚本..."
+          # if [ -f "${{ github.workspace }}/files/etc/uci-defaults/99-custom.sh" ]; then
+          #   cp ${{ github.workspace }}/files/etc/uci-defaults/99-custom.sh \
+          #      files/etc/uci-defaults/99-custom.sh
+          #   chmod +x files/etc/uci-defaults/99-custom.sh
+          #   echo "✅ 已复制 99-custom.sh"
+          #   echo "📋 脚本大小: $(du -h files/etc/uci-defaults/99-custom.sh | cut -f1)"
+          # else
+          #   echo "❌ 错误: 未找到源文件 ${{ github.workspace }}/files/etc/uci-defaults/99-custom.sh"
+          #   exit 1
+          # fi
           
           # ============================================
           # 2. 创建 pppoe-settings 配置文件（关键！）
