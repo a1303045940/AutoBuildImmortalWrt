@@ -314,7 +314,7 @@ jobs:
             PACKAGES="$PACKAGES" \
             FILES="files" \
             DISABLED_SERVICES="$DISABLED_SERVICES" \
-            --force-depends -j$(nproc)
+            -j$(nproc) --force-depends
           
           echo "================================================"
           echo "✅ 固件构建完成!"
