@@ -309,14 +309,19 @@ jobs:
           echo "================================================"
           echo "🚀 执行构建命令..."
           echo "================================================"
-          make image \
+          # make image \
+          #   PROFILE="${{ github.event.inputs.profile }}" \
+          #   PACKAGES="$PACKAGES" \
+          #   FILES="files" \
+          #   DISABLED_SERVICES="$DISABLED_SERVICES" \
+          #   -j$(nproc)
+          make -j$(nproc) --force-depends \
+            image \
             PROFILE="${{ github.event.inputs.profile }}" \
             PACKAGES="$PACKAGES" \
             FILES="files" \
-            DISABLED_SERVICES="$DISABLED_SERVICES" \
-            -j$(nproc) \
-            --force-depends
-          
+            DISABLED_SERVICES="$DISABLED_SERVICES"
+
           echo "================================================"
           echo "✅ 固件构建完成!"
           echo "================================================"
