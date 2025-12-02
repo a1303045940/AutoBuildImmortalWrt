@@ -38,6 +38,15 @@ EOF
 echo "cat pppoe-settings"
 cat /home/build/immortalwrt/files/etc/config/pppoe-settings
 
+# 复制 uci-defaults 脚本
+mkdir -p /home/build/immortalwrt/files/etc/uci-defaults
+wget -q https://raw.githubusercontent.com/a1303045940/AutoBuildImmortalWrt/master/files/etc/uci-defaults/99-custom.sh \
+  -O /home/build/immortalwrt/files/etc/uci-defaults/99-custom.sh
+chmod +x /home/build/immortalwrt/files/etc/uci-defaults/99-custom.sh
+
+
+
+
 # 输出调试信息
 echo "$(date '+%Y-%m-%d %H:%M:%S') - Starting build process..."
 
