@@ -259,7 +259,7 @@ jobs:
           sed -i 's|src |src/gz |g' repositories.conf
           
           # 从 GitHub Actions 工作目录复制 repositories.conf 到 imagebuilder
-          #cp -f ${{ github.workspace }}/packages/repositories.conf repositories.conf
+          cp -f ${{ github.workspace }}/packages/repositories.conf repositories.conf
           
           # 添加 OpenWrt 官方源作为补充
           echo "" >> repositories.conf
