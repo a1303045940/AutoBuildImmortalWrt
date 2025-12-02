@@ -1,5 +1,5 @@
 #!/bin/bash
-source shell/custom-packages.sh
+source shell/custom2-packages.sh
 # 该文件实际为imagebuilder容器内的build.sh
 
 #echo "✅ 你选择了第三方软件包：$CUSTOM_PACKAGES"
