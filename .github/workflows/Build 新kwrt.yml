@@ -229,7 +229,7 @@ jobs:
           sed -i 's|src |src/gz |g' repositories.conf
           
           # 移除失效源
-          sed -i '/kiddin9/d' repositories.conf
+          #sed -i '/kiddin9/d' repositories.conf
           
           echo "================================================"
           echo "📄 repositories.conf:"
