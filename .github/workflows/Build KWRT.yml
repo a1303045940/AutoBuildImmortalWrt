@@ -1,4 +1,4 @@
-name: Build KWRT
+name: Build 新KWRT
 
 on:
   workflow_dispatch:
@@ -63,7 +63,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y wget zstd
+          sudo apt-get install -y wget zstd tree
 
       - name: Save Custom Router IP
         run: |
@@ -98,7 +98,7 @@ jobs:
           
           # 默认平台
           platform="mediatek/filogic"
-          download_url="https://dl.openwrt.ai/releases/${{ env.KWRT_VERSION }}/targets/mediatek/filogic/kwrt-imagebuilder-mediatek-filogic.Linux-x86_64.tar.zst"
+          download_url="https://github.com/a1303045940/Kwrt/releases/download/12%2F02_2025_03%2F44_mediatek_filogic/kwrt-imagebuilder-mediatek-filogic.Linux-x86_64.tar.zst"
           
           # 读取 ipq807x 机型
           if [ -f model/ipq807x.txt ]; then
@@ -155,7 +155,15 @@ jobs:
           
           filename=$(basename ${{ env.download_url }})
           echo "📦 Extracting $filename..."
-          tar --zstd -xf $filename
+          
+          if [[ "$filename" =~ \.tar\.gz$ ]]; then
+            tar -xzf "$filename"
+          elif [[ "$filename" =~ \.tar\.zst$ ]]; then
+            tar --zstd -xf "$filename"
+          else
+            echo "❌ 不支持的格式"
+            exit 1
+          fi
           
           # 获取解压后的目录名
           builder_dir=$(tar --zstd -tf $filename | head -1 | cut -f1 -d"/")
@@ -167,10 +175,55 @@ jobs:
         run: |
           cd ${{ env.IMAGE_BUILDER_DIR }}
           
+          echo "================================================"
+          echo "准备自定义文件和配置"
+          echo "================================================"
+          
           # 创建自定义文件目录
           mkdir -p files/etc/uci-defaults files/etc/config
           
-          # 复制自定义配置
+          # ============================================
+          # 1. 复制 99-custom.sh 脚本
+          # ============================================
+          echo "📄 复制 uci-defaults 脚本..."
+          if [ -f "${{ github.workspace }}/files/etc/uci-defaults/99-custom.sh" ]; then
+            cp ${{ github.workspace }}/files/etc/uci-defaults/99-custom.sh \
+               files/etc/uci-defaults/99-custom.sh
+            chmod +x files/etc/uci-defaults/99-custom.sh
+            echo "✅ 已复制 99-custom.sh"
+            echo "📋 脚本大小: $(du -h files/etc/uci-defaults/99-custom.sh | cut -f1)"
+          else
+            echo "❌ 错误: 未找到源文件 ${{ github.workspace }}/files/etc/uci-defaults/99-custom.sh"
+            exit 1
+          fi
+          
+          # ============================================
+          # 2. 创建 pppoe-settings 配置文件（关键！）
+          # ============================================
+          echo "📝 创建 PPPoE 配置文件..."
+          cat > files/etc/config/pppoe-settings << 'EOF'
+enable_pppoe=${{ github.event.inputs.enable_pppoe }}
+pppoe_account=${{ github.event.inputs.pppoe_account }}
+pppoe_password=${{ github.event.inputs.pppoe_password }}
+EOF
+          echo "✅ PPPoE 配置已创建:"
+          cat files/etc/config/pppoe-settings
+          
+          # ============================================
+          # 3. 复制路由器 IP 配置
+          # ============================================
+          echo "📝 复制路由器 IP 配置..."
+          if [ -f "${{ github.workspace }}/custom/custom_router_ip.txt" ]; then
+            cp ${{ github.workspace }}/custom/custom_router_ip.txt \
+               files/etc/config/custom_router_ip.txt
+            echo "✅ 路由器 IP: $(cat files/etc/config/custom_router_ip.txt)"
+          else
+            echo "⚠️ 未找到自定义 IP 配置文件"
+          fi
+          
+          # ============================================
+          # 4. 复制其他配置
+          # ============================================
           if [ -d "${{ github.workspace }}/glinet" ]; then
             cp -r ${{ github.workspace }}/glinet/* files/etc/uci-defaults/ 2>/dev/null || true
             echo "✅ 已复制 glinet 配置"
@@ -181,12 +234,20 @@ jobs:
             echo "✅ 已复制 custom 配置"
           fi
           
-          # 复制架构配置
           if [ -f "${{ github.workspace }}/arch/arch.conf" ]; then
             mkdir -p files/etc/opkg
             cp ${{ github.workspace }}/arch/arch.conf files/etc/opkg/arch.conf
             echo "✅ 已复制 arch.conf"
           fi
+          
+          # ============================================
+          # 5. 显示完整的文件结构
+          # ============================================
+          echo "================================================"
+          echo "📂 files 目录完整结构:"
+          echo "================================================"
+          tree files/ || find files -type f -exec ls -lh {} \;
+          echo "================================================"
 
       - name: Configure repositories
         run: |
@@ -210,6 +271,10 @@ jobs:
         run: |
           cd ${{ env.IMAGE_BUILDER_DIR }}
           
+          echo "================================================"
+          echo "开始构建固件"
+          echo "================================================"
+          
           # 基础软件包列表
           PACKAGES="luci luci-ssl-openssl luci-base luci-compat"
           
@@ -229,36 +294,49 @@ jobs:
           if [ -f "${{ github.workspace }}/shell/custom-packages.sh" ]; then
             source ${{ github.workspace }}/shell/custom-packages.sh
             PACKAGES="$PACKAGES $CUSTOM_PACKAGES"
+            echo "✅ 已添加自定义软件包"
           fi
           
-          echo "📦 软件包列表: $PACKAGES"
+          echo "📦 最终软件包列表:"
+          echo "$PACKAGES" | tr ' ' '\n'
           
           # 禁用的服务
           DISABLED_SERVICES="https-dns-proxy"
           
-          echo "🚀 开始构建固件..."
+          echo "================================================"
+          echo "🚀 执行构建命令..."
+          echo "================================================"
           make image \
             PROFILE="${{ github.event.inputs.profile }}" \
             PACKAGES="$PACKAGES" \
             FILES="files" \
             DISABLED_SERVICES="$DISABLED_SERVICES"
           
+          echo "================================================"
           echo "✅ 固件构建完成!"
+          echo "================================================"
           ls -lh bin/targets/${{ env.PLATFORM }}/
 
-      - name: Configure PPPoE (if enabled)
-        if: ${{ inputs.enable_pppoe == 'yes' }}
+      - name: Verify build results
         run: |
-          cd ${{ env.IMAGE_BUILDER_DIR }}
+          cd ${{ env.BUILD_TARGET_DIR }}
           
-          echo "🔧 配置 PPPoE 拨号..."
-          mkdir -p files/etc/config
-          cat > files/etc/config/pppoe-config << EOF
-          # PPPoE Configuration
-          ACCOUNT=${{ inputs.pppoe_account }}
-          PASSWORD=${{ inputs.pppoe_password }}
-          EOF
-          echo "✅ PPPoE 配置已保存"
+          echo "================================================"
+          echo "🔍 验证构建结果"
+          echo "================================================"
+          
+          echo "📋 生成的所有文件:"
+          ls -lh
+          
+          echo ""
+          echo "📦 固件文件:"
+          ls -lh *.bin 2>/dev/null || echo "未找到 .bin 文件"
+          
+          echo ""
+          echo "📦 压缩文件:"
+          ls -lh *.tar.zst 2>/dev/null || echo "未找到 .tar.zst 文件"
+          
+          echo "================================================"
 
       - name: Create release info
         run: |
@@ -277,15 +355,27 @@ jobs:
           - **Store 商店**: ${{ github.event.inputs.enable_store == 'true' && '✅ 已启用' || '❌ 未启用' }}
           - **PPPoE 拨号**: ${{ inputs.enable_pppoe == 'yes' && '✅ 已配置' || '❌ 未配置' }}
           
+          ### 配置信息
+          - **uci-defaults 脚本**: ✅ 已集成 (首次启动自动执行)
+          - **自定义路由器 IP**: \`${{ github.event.inputs.custom_router_ip }}\`
+          
           ### 下载说明
           - \`*-squashfs-sysupgrade.bin\`: 系统升级固件 (已有 OpenWrt 系统使用)
           - \`*-factory.bin\`: 初次刷机固件 (从原厂固件刷入)
+          - \`*.tar.zst\`: ImageBuilder 压缩包
           - \`sha256sums\`: 文件校验和
           
           ### 默认信息
           - 管理地址: http://${{ github.event.inputs.custom_router_ip }}
           - 默认用户名: root
           - 默认密码: password (首次登录需修改)
+          
+          ### 首次启动说明
+          固件首次启动时会自动执行 \`99-custom.sh\` 脚本进行初始化配置:
+          - 自动配置网络接口
+          - 应用 PPPoE 拨号设置 (如已启用)
+          - 设置路由器管理地址
+          - 配置防火墙规则
           EOF
           
           cat release-info.md
@@ -294,10 +384,12 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.event.inputs.profile }}-${{ github.run_number }}
-          name: "Kwrt-${{ github.event.inputs.profile }}"
+          name: "Kwrt-${{ github.event.inputs.profile }}-$(date +'%Y%m%d')"
           body_path: release-info.md
           files: |
-            ${{ env.BUILD_TARGET_DIR }}/*
+            ${{ env.BUILD_TARGET_DIR }}/*.bin
+            ${{ env.BUILD_TARGET_DIR }}/*.tar.zst
+            ${{ env.BUILD_TARGET_DIR }}/sha256sums
           token: ${{ secrets.GITHUB_TOKEN }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -305,6 +397,6 @@ jobs:
       - name: Upload firmware as artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Kwrt-${{ github.event.inputs.profile }}
+          name: Kwrt-${{ github.event.inputs.profile }}-${{ github.run_number }}
           path: ${{ env.BUILD_TARGET_DIR }}
           retention-days: 7
