@@ -191,10 +191,10 @@ jobs:
           
           # 2. 创建 PPPoE 配置
           cat > files/etc/config/pppoe-settings << 'EOF'
-enable_pppoe=${{ github.event.inputs.enable_pppoe }}
-pppoe_account=${{ github.event.inputs.pppoe_account }}
-pppoe_password=${{ github.event.inputs.pppoe_password }}
-EOF
+          enable_pppoe=${{ github.event.inputs.enable_pppoe }}
+          pppoe_account=${{ github.event.inputs.pppoe_account }}
+          pppoe_password=${{ github.event.inputs.pppoe_password }}
+          EOF
           echo "✅ 已创建 pppoe-settings"
           
           # 3. 复制路由器 IP
