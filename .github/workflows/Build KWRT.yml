@@ -151,8 +151,8 @@ jobs:
       - name: Download and extract Kwrt ImageBuilder
         run: |
           echo "⬇️ Downloading ImageBuilder..."
-          #wget -q --show-progress ${{ env.download_url }}
-          wget -q --progress-bar ${{ env.download_url }}
+          wget -q --show-progress ${{ env.download_url }}
+          #wget -q --progress-bar ${{ env.download_url }}
           
           filename=$(basename ${{ env.download_url }})
           echo "📦 Extracting $filename..."
