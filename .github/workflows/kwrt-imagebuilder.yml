@@ -32,10 +32,10 @@ on:
           - xiaomi_mi-router-wr30u-112m-nmbm
           - xiaomi_redmi-router-ax6000
           - xiaomi_redmi-router-ax6000-stock
-          - xiaomi_redmi-router-ax6000-ubootmod
-          - cmcc_rax3000me
-          # ... 复制你完整的型号列表到这里 ...
-        default: cmcc_rax3000me
+          - sl_3000-emmc
+          - sl_3000-emmc
+         
+        default: sl_3000-emmc
       custom_router_ip:
         description: "请设置路由器的管理地址 格式:192.168.x.1 或 10.x.x.1"
         required: true
