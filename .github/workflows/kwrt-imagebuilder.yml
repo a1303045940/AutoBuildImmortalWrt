@@ -163,16 +163,16 @@ jobs:
     - name: Create release info
       run: |
         cat > info.md << EOF
-# Kwrt 24.10.x 固件信息
-        
-**型号**: ${{ github.event.inputs.profile }}
-**管理IP**: ${{ github.event.inputs.custom_router_ip }}
-**Docker**: ${{ github.event.inputs.include_docker == 'yes' && '✅ 包含' || '❌ 不包含' }}
-**Store**: ${{ github.event.inputs.enable_store == 'true' && '✅ 包含' || '❌ 不包含' }}
-**PPPoE**: ${{ github.event.inputs.enable_pppoe == 'yes' && '✅ 已配置' || '❌ 未配置' }}
-
-**固件文件**: bin/targets/mediatek/filogic/
-EOF
+          # Kwrt 24.10.x 固件信息
+                  
+          **型号**: ${{ github.event.inputs.profile }}
+          **管理IP**: ${{ github.event.inputs.custom_router_ip }}
+          **Docker**: ${{ github.event.inputs.include_docker == 'yes' && '✅ 包含' || '❌ 不包含' }}
+          **Store**: ${{ github.event.inputs.enable_store == 'true' && '✅ 包含' || '❌ 不包含' }}
+          **PPPoE**: ${{ github.event.inputs.enable_pppoe == 'yes' && '✅ 已配置' || '❌ 未配置' }}
+          
+          **固件文件**: bin/targets/mediatek/filogic/
+          EOF
         
         cat info.md
 
