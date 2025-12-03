@@ -1,4 +1,4 @@
-name: Build Kwrt 24.10.x with Official ImageBuilder
+name: kwrt-imagebuilder
 
 on:
   workflow_dispatch:
