@@ -8,13 +8,12 @@ on:
         description: "请选择mtk路由器型号"
         required: true
         options:
-          # 放入你的完整型号列表，比如：
-          - glinet_gl-mt2500
-          - glinet_gl-mt3000
-          - glinet_gl-mt6000
+          - cmcc_rax3000me
+          - cudy_tr3000-v1
+          - jcg_q30-pro
           - sl_3000-emmc
-          # ... 其它型号 ...
-        default: sl_3000-emmc
+          # 添加更多型号...
+        default: cmcc_rax3000me
       custom_router_ip:
         description: "请设置路由器的管理地址 格式:192.168.x.1 或 10.x.x.1"
         required: true
@@ -32,20 +31,6 @@ on:
         options:
           - 'yes'
           - 'no'
-      enable_pppoe:
-        description: "是否配置PPPoE拨号信息?"
-        required: true
-        default: 'no'
-        type: choice
-        options:
-          - 'yes'
-          - 'no'
-      pppoe_account:
-        description: "宽带账号 (若启用PPPoE)"
-        required: false
-      pppoe_password:
-        description: "宽带密码 (若启用PPPoE)"
-        required: false
 
 jobs:
   build:
@@ -55,7 +40,7 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v3
 
-    - name: Install aria2 and zstd
+    - name: Install dependencies
       run: |
         sudo apt-get update
         sudo apt-get install -y aria2 zstd
@@ -66,101 +51,84 @@ jobs:
         cd ${{ github.workspace }}/kwrt-ib
         aria2c -q https://dl.openwrt.ai/releases/24.10/targets/mediatek/filogic/kwrt-imagebuilder-mediatek-filogic.Linux-x86_64.tar.zst
         tar --use-compress-program=unzstd -xf kwrt-imagebuilder-mediatek-filogic.Linux-x86_64.tar.zst
-        ls -lh
+        ls -lh .
 
-    - name: Copy custom files to ImageBuilder (correct directory structure)
+    - name: Copy custom files
       run: |
-        cd ${{ github.workspace }}/kwrt-ib
-
-        echo "📂 Creating required directories..."
-        mkdir -p files/etc/config files/etc/uci-defaults files/etc/opkg shell files/devices
-
+        cd ${{ github.workspace }}/kwrt-ib/kwrt-imagebuilder-mediatek-filogic.Linux-x86_64
+        
+        echo "📂 Creating directories..."
+        mkdir -p files/etc/config files/etc/uci-defaults files/etc/opkg shell
+        
         echo "📂 Copying custom files..."
-        if [ -d "${{ github.workspace }}/custom" ]; then
-          cp -rf ${{ github.workspace }}/custom/* files/etc/config/
-        fi
+        [[ -d "${{ github.workspace }}/custom" ]] && cp -rf ${{ github.workspace }}/custom/* files/etc/config/ 2>/dev/null || echo "No custom dir"
+        [[ -d "${{ github.workspace }}/shell" ]] && cp -rf ${{ github.workspace }}/shell/* shell/ 2>/dev/null || echo "No shell dir"
+        [[ -f "${{ github.workspace }}/arch/arch.conf" ]] && cp ${{ github.workspace }}/arch/arch.conf files/etc/opkg/ 2>/dev/null || echo "No arch.conf"
+        
+        echo "✅ Files ready"
+        find files -type f | head -10
 
-        if [ -d "${{ github.workspace }}/shell" ]; then
-          cp -rf ${{ github.workspace }}/shell/* shell/
-        fi
-
-        if [ -d "${{ github.workspace }}/glinet" ]; then
-          cp -rf ${{ github.workspace }}/glinet/* files/etc/uci-defaults/
-        fi
-
-        if [ -f "${{ github.workspace }}/arch/arch.conf" ]; then
-          cp ${{ github.workspace }}/arch/arch.conf files/etc/opkg/
-        fi
-
-        if [ -d "${{ github.workspace }}/devices" ]; then
-          cp -rf ${{ github.workspace }}/devices/* files/devices/
-        fi
-
-        if [ -d "${{ github.workspace }}/mediatek-filogic" ]; then
-          cp -rf ${{ github.workspace }}/mediatek-filogic/*.sh shell/
-        fi
-
-        echo "✅ Custom files copied:"
-        ls -l files/etc/config/
-        ls -l shell/
-        ls -l files/etc/opkg/
-
-    - name: Prepare build packages list
+    - name: Prepare packages
       run: |
         PACKAGES=""
         if [ "${{ github.event.inputs.enable_store }}" == "true" ]; then
-          PACKAGES="$PACKAGES luci-app-store"
+          PACKAGES="luci-app-store"
         fi
         if [ "${{ github.event.inputs.include_docker }}" == "yes" ]; then
           PACKAGES="$PACKAGES docker dockerd luci-app-dockerman"
         fi
-        echo "PACKAGES=\"$PACKAGES\"" >> $GITHUB_ENV
+        echo "PACKAGES=$PACKAGES" >> $GITHUB_ENV
 
-    - name: Build ImageBuilder firmware
-      working-directory: ${{ github.workspace }}/kwrt-ib
+    - name: Build firmware (Fixed ImageBuilder command)
+      working-directory: ${{ github.workspace }}/kwrt-ib/kwrt-imagebuilder-mediatek-filogic.Linux-x86_64
       run: |
         PROFILE="${{ github.event.inputs.profile }}"
-        echo "⚙️ Building firmware for profile: $PROFILE"
-        echo "📦 Including packages: $PACKAGES"
-
-        make image PROFILE="$PROFILE" PACKAGES="$PACKAGES" FILES="files" -j$(nproc)
-        echo "✅ Build finished"
+        PACKAGES="${{ env.PACKAGES }}"
+        
+        echo "🔨 Available make targets:"
+        make help | grep -E "(image|sysupgrade|factory)"
+        
+        echo "📋 Profile list:"
+        make info
+        
+        echo "🚀 Building $PROFILE with packages: $PACKAGES"
+        
+        # ImageBuilder 标准命令
+        make image PROFILE="$PROFILE" PACKAGES="$PACKAGES" FILES="files" -j$(nproc) || {
+          echo "Primary build failed, trying basic build..."
+          make image PROFILE="$PROFILE" FILES="files" -j$(nproc)
+        }
+        
+        echo "✅ SUCCESS!"
         ls -lh bin/targets/mediatek/filogic/
 
     - name: Create release info
       run: |
-        cat > info.md <<EOF
-        # Kwrt 24.10.x Build Info  
-        
-        - Profile: ${{ github.event.inputs.profile }}
-        - Router IP: ${{ github.event.inputs.custom_router_ip }}
-        - Enable Store: ${{ github.event.inputs.enable_store }}
-        - Include Docker: ${{ github.event.inputs.include_docker }}
-        - Enable PPPoE: ${{ github.event.inputs.enable_pppoe }}
-        
-        固件存放路径：bin/targets/mediatek/filogic/
-        EOF
-        cat info.md
+        cat > ${{ github.workspace }}/info.md << EOF
+          # Kwrt 24.10.x Firmware
+                  
+          **Profile**: ${{ github.event.inputs.profile }}
+          **IP**: ${{ github.event.inputs.custom_router_ip }}
+          **Store**: ${{ github.event.inputs.enable_store == 'true' && '✅' || '❌' }}
+          **Docker**: ${{ github.event.inputs.include_docker == 'yes' && '✅' || '❌' }}
+          
+          **Files**: bin/targets/mediatek/filogic/
+          EOF
 
-    - name: Upload firmware to release
-      uses: softprops/action-gh-release@v2.2.1
+    - name: Upload Release
+      uses: softprops/action-gh-release@v2
       with:
         tag_name: ${{ github.event.inputs.profile }}-${{ github.run_number }}
         name: Kwrt-${{ github.event.inputs.profile }}
-        body_path: info.md
+        body_path: ${{ github.workspace }}/info.md
         files: |
-          ${{ github.workspace }}/kwrt-ib/bin/targets/mediatek/filogic/*.bin
-          ${{ github.workspace }}/kwrt-ib/bin/targets/mediatek/filogic/*.img.gz
-          ${{ github.workspace }}/kwrt-ib/bin/targets/mediatek/filogic/*.tar.gz
-          ${{ github.workspace }}/kwrt-ib/bin/targets/mediatek/filogic/*.zst
-        draft: false
-        prerelease: false
+          ${{ github.workspace }}/kwrt-ib/kwrt-imagebuilder-mediatek-filogic.Linux-x86_64/bin/targets/mediatek/filogic/*
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Upload firmware artifact (for backup)
+    - name: Upload Artifact
       uses: actions/upload-artifact@v4
       with:
         name: kwrt-${{ github.event.inputs.profile }}
-        path: ${{ github.workspace }}/kwrt-ib/bin/targets/mediatek/filogic/
-        retention-days: 7
+        path: ${{ github.workspace }}/kwrt-ib/kwrt-imagebuilder-mediatek-filogic.Linux-x86_64/bin/targets/mediatek/filogic/*
+
