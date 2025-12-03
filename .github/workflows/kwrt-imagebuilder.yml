@@ -1,0 +1,201 @@
+name: kwrt-imagebuilder
+
+on:
+  workflow_dispatch:
+    inputs:
+      profile:
+        type: choice
+        description: "请选择mtk路由器型号"
+        required: true
+        options:
+          # 你的完整型号列表（这里只展示部分，完整复制你的列表）
+          - glinet_gl-mt2500
+          - glinet_gl-mt3000
+          - glinet_gl-mt6000
+          - glinet_gl-axt1800
+          - glinet_gl-ax1800
+          - glinet_gl-b2200
+          - glinet_gl-x3000
+          - glinet_gl-xe3000
+          - huasifei_wh3000-emmc
+          - cudy_tr3000-v1
+          - cudy_tr3000-v1-ubootmod
+          - cudy_tr3000-256mb-v1
+          - jcg_q30-pro
+          - jcg_q30
+          - jcg_q30-ubootmod
+          - jdcloud_re-cp-03
+          - xiaomi_mi-router-ax3000t
+          - xiaomi_mi-router-ax3000t-ubootmod
+          - xiaomi_mi-router-wr30u-stock
+          - xiaomi_mi-router-wr30u-ubootmod
+          - xiaomi_mi-router-wr30u-112m-nmbm
+          - xiaomi_redmi-router-ax6000
+          - xiaomi_redmi-router-ax6000-stock
+          - xiaomi_redmi-router-ax6000-ubootmod
+          - cmcc_rax3000me
+          # ... 复制你完整的型号列表到这里 ...
+        default: cmcc_rax3000me
+      custom_router_ip:
+        description: "请设置路由器的管理地址 格式:192.168.x.1 或 10.x.x.1"
+        required: true
+        default: "192.168.6.1"
+      enable_store:
+        description: "集成 store 商店"
+        required: false
+        type: boolean
+        default: true
+      include_docker:
+        description: "是否编译 Docker 插件"
+        required: true
+        default: 'no'
+        type: choice
+        options:
+          - 'yes'
+          - 'no'
+      enable_pppoe:
+        description: "是否配置PPPoE拨号信息?"
+        required: true
+        default: 'no'
+        type: choice
+        options:
+          - 'yes'
+          - 'no'
+      pppoe_account:
+        description: "宽带账号 (若启用PPPoE)"
+        required: false
+      pppoe_password:
+        description: "宽带密码 (若启用PPPoE)"
+        required: false
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y aria2 zstd
+
+    - name: Download Official Kwrt ImageBuilder
+      run: |
+        mkdir -p ${{ github.workspace }}/kwrt-ib
+        cd ${{ github.workspace }}/kwrt-ib
+        echo "📥 下载官方 Kwrt ImageBuilder..."
+        aria2c -q -x 16 -s 16 \
+          https://dl.openwrt.ai/releases/24.10/targets/mediatek/filogic/kwrt-imagebuilder-mediatek-filogic.Linux-x86_64.tar.zst
+        
+        echo "📦 解压 ImageBuilder..."
+        tar --use-compress-program=unzstd -xf kwrt-imagebuilder-mediatek-filogic.Linux-x86_64.tar.zst
+        ls -la
+
+    - name: Copy custom files to ImageBuilder (保留所有DIY配置)
+      run: |
+        echo "📂 复制本地自定义文件到 ImageBuilder..."
+        cd ${{ github.workspace }}/kwrt-ib
+        
+        # 创建 files 目录结构（ImageBuilder 标准）
+        mkdir -p files/etc/config
+        mkdir -p files/etc/uci-defaults
+        mkdir -p shell
+        
+        # 复制你的自定义文件（完全保留原有功能）
+        [[ -d "${{ github.workspace }}/custom" ]] && cp -rf ${{ github.workspace }}/custom/* files/etc/config/
+        [[ -d "${{ github.workspace }}/shell" ]] && cp -rf ${{ github.workspace }}/shell/* shell/
+        [[ -d "${{ github.workspace }}/glinet" ]] && cp -rf ${{ github.workspace }}/glinet/* files/etc/uci-defaults/
+        [[ -f "${{ github.workspace }}/arch/arch.conf" ]] && cp ${{ github.workspace }}/arch/arch.conf files/etc/opkg/
+        [[ -d "${{ github.workspace }}/devices" ]] && cp -rf ${{ github.workspace }}/devices/* files/
+        [[ -d "${{ github.workspace }}/mediatek-filogic" ]] && cp -rf ${{ github.workspace }}/mediatek-filogic/*.sh shell/
+        
+        # 保存自定义IP配置
+        mkdir -p files/etc/config
+        echo "${{ github.event.inputs.custom_router_ip }}" > files/etc/config/custom_router_ip.txt
+        
+        echo "✅ 自定义文件复制完成"
+        ls -la files/ shell/ 2>/dev/null || true
+
+    - name: Prepare build packages list
+      run: |
+        # 根据用户选择准备 PACKAGES 列表
+        PACKAGES=""
+        if [ "${{ github.event.inputs.enable_store }}" == "true" ]; then
+          PACKAGES="$PACKAGES luci-app-store"
+        fi
+        if [ "${{ github.event.inputs.include_docker }}" == "yes" ]; then
+          PACKAGES="$PACKAGES docker dockerd luci-app-dockerman"
+        fi
+        
+        # 保存到环境变量
+        echo "BUILD_PACKAGES=$PACKAGES" >> $GITHUB_ENV
+        echo "Profile: ${{ github.event.inputs.profile }}"
+        echo "Packages: $PACKAGES"
+        echo "IP: ${{ github.event.inputs.custom_router_ip }}"
+
+    - name: Build firmware with ImageBuilder
+      working-directory: ${{ github.workspace }}/kwrt-ib
+      run: |
+        profile="${{ github.event.inputs.profile }}"
+        packages="${{ env.BUILD_PACKAGES }}"
+        pppoe_enabled="${{ github.event.inputs.enable_pppoe }}"
+        pppoe_account="${{ github.event.inputs.pppoe_account }}"
+        pppoe_password="${{ github.event.inputs.pppoe_password }}"
+        
+        echo "🚀 开始编译: $profile"
+        echo "📦 包列表: $packages"
+        
+        # ImageBuilder 标准编译命令
+        time make image \
+          PROFILE="$profile" \
+          PACKAGES="$packages" \
+          FILES="files" \
+          EXTRA_IMAGE_PACKAGES="" \
+          DISABLED_SERVICES="odhcpd dnsmasq" \
+          -j$(nproc) \
+          V=s || make image PROFILE="$profile" PACKAGES="$packages" FILES="files" -j$(nproc)
+        
+        echo "✅ 编译完成！"
+        ls -la bin/targets/mediatek/filogic/
+
+    - name: Create release info
+      run: |
+        cat > info.md << EOF
+# Kwrt 24.10.x 固件信息
+        
+**型号**: ${{ github.event.inputs.profile }}
+**管理IP**: ${{ github.event.inputs.custom_router_ip }}
+**Docker**: ${{ github.event.inputs.include_docker == 'yes' && '✅ 包含' || '❌ 不包含' }}
+**Store**: ${{ github.event.inputs.enable_store == 'true' && '✅ 包含' || '❌ 不包含' }}
+**PPPoE**: ${{ github.event.inputs.enable_pppoe == 'yes' && '✅ 已配置' || '❌ 未配置' }}
+
+**固件文件**: bin/targets/mediatek/filogic/
+EOF
+        
+        cat info.md
+
+    - name: Upload firmware as Release
+      uses: softprops/action-gh-release@v2.2.1
+      with:
+        tag_name: ${{ github.event.inputs.profile }}-${{ github.run_number }}
+        name: Kwrt-${{ github.event.inputs.profile }}
+        body_path: info.md
+        files: |
+          ${{ github.workspace }}/kwrt-ib/bin/targets/mediatek/filogic/*.bin
+          ${{ github.workspace }}/kwrt-ib/bin/targets/mediatek/filogic/*.img.gz
+          ${{ github.workspace }}/kwrt-ib/bin/targets/mediatek/filogic/*.tar.gz
+          ${{ github.workspace }}/kwrt-ib/bin/targets/mediatek/filogic/*.zst
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Upload firmware as artifact (备用下载)
+      uses: actions/upload-artifact@v4
+      with:
+        name: kwrt-${{ github.event.inputs.profile }}
+        path: |
+          ${{ github.workspace }}/kwrt-ib/bin/targets/mediatek/filogic/*
+        retention-days: 7
