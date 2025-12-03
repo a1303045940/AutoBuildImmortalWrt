@@ -13,7 +13,7 @@ on:
           - jcg_q30-pro
           - sl_3000-emmc
           # 添加更多型号...
-        default: cmcc_rax3000me
+        default: sl_3000-emmc
       custom_router_ip:
         description: "请设置路由器的管理地址 格式:192.168.x.1 或 10.x.x.1"
         required: true
