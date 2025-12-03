@@ -49,7 +49,9 @@ jobs:
       run: |
         mkdir -p ${{ github.workspace }}/kwrt-ib
         cd ${{ github.workspace }}/kwrt-ib
-        aria2c -q https://dl.openwrt.ai/releases/24.10/targets/mediatek/filogic/kwrt-imagebuilder-mediatek-filogic.Linux-x86_64.tar.zst
+        #aria2c -q https://dl.openwrt.ai/releases/24.10/targets/mediatek/filogic/kwrt-imagebuilder-mediatek-filogic.Linux-x86_64.tar.zst
+        aria2c -q https://github.com/a1303045940/Kwrt/releases/download/12%2F03_2025_19%2F33_mediatek_filogic/kwrt-imagebuilder-mediatek-filogic.Linux-x86_64.tar.zst
+
         tar --use-compress-program=unzstd -xf kwrt-imagebuilder-mediatek-filogic.Linux-x86_64.tar.zst
         ls -lh .
 
