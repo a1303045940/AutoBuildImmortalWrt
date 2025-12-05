@@ -104,8 +104,9 @@ EOF
     /etc/init.d/npc enable
     /etc/init.d/npc restart
 fi
-
 uci commit
+uci commit wireless
+wifi reload
 
 # ============================================
 # 4. 修改系统版本信息
