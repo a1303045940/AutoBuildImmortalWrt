@@ -105,7 +105,6 @@ EOF
     /etc/init.d/npc restart
 fi
 uci commit
-uci commit wireless
 wifi reload
 
 # ============================================
