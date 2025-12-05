@@ -2,7 +2,7 @@
 # Custom script to run at first boot
 # Place your custom commands below
 
-opkg remove --autoremove luci-app-wizard luci-app-upnp $(opkg list-installed | grep zh-cn | sed -e "s/\s.*$//")
+#opkg remove --autoremove luci-app-wizard luci-app-upnp $(opkg list-installed | grep zh-cn | sed -e "s/\s.*$//")
 echo '#!/bin/sh /etc/rc.common
 
 # Copyright 2020 Google LLC.
