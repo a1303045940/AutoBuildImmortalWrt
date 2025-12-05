@@ -374,26 +374,22 @@ jobs:
           echo "✅ 解压后文件列表 (准备上传):"
           ls -lh *.bin || echo "❌ 未找到 bin 文件"
 
-      # 2. 上传 Release (只选 .bin)
       - name: Upload firmware to Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.event.inputs.profile }}-${{ github.run_number }}
-          name: "Kwrt-${{ github.event.inputs.profile }}-${{ github.run_number }}"
+          name: "Kwrt-${{ github.event.inputs.profile }}-$(date +'%Y%m%d')"
           body_path: release-info.md
-          # 仅匹配 bin 文件
           files: |
             ${{ env.BUILD_TARGET_DIR }}/*.bin
+            ${{ env.BUILD_TARGET_DIR }}/*.tar.zst
             ${{ env.BUILD_TARGET_DIR }}/sha256sums
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      # 3. 上传 Artifact (只选 .bin)
+      
       - name: Upload firmware as artifact
         uses: actions/upload-artifact@v4
         with:
           name: Kwrt-${{ github.event.inputs.profile }}-${{ github.run_number }}
-          path: |
-            ${{ env.BUILD_TARGET_DIR }}/*.bin
-            ${{ env.BUILD_TARGET_DIR }}/sha256sums
+          path: ${{ env.BUILD_TARGET_DIR }}
           retention-days: 7
