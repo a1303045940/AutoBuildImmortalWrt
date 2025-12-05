@@ -352,22 +352,48 @@ jobs:
           默认用户名: root, 密码: password
           EOF
 
+      # 1. 新增解压步骤
+      - name: Extract firmware zip
+        run: |
+          cd ${{ env.BUILD_TARGET_DIR }}
+          echo "📂 解压前文件列表:"
+          ls -lh
+          
+          echo "🔓 正在解压 ZIP 文件..."
+          # 查找并解压所有 zip 文件，-o 表示覆盖不询问
+          for file in *.zip; do
+            if [ -f "$file" ]; then
+              echo "Unzipping $file..."
+              unzip -o "$file"
+            fi
+          done
+          
+          echo "🗑️ 删除原始 zip 文件 (可选)..."
+          rm -f *.zip
+          
+          echo "✅ 解压后文件列表 (准备上传):"
+          ls -lh *.bin || echo "❌ 未找到 bin 文件"
+
+      # 2. 上传 Release (只选 .bin)
       - name: Upload firmware to Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.event.inputs.profile }}-${{ github.run_number }}
-          name: "Kwrt-${{ github.event.inputs.profile }}-$(date +'%Y%m%d')"
+          name: "Kwrt-${{ github.event.inputs.profile }}-${{ github.run_number }}"
           body_path: release-info.md
+          # 仅匹配 bin 文件
           files: |
             ${{ env.BUILD_TARGET_DIR }}/*.bin
-            ${{ env.BUILD_TARGET_DIR }}/*.tar.zst
             ${{ env.BUILD_TARGET_DIR }}/sha256sums
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      # 3. 上传 Artifact (只选 .bin)
       - name: Upload firmware as artifact
         uses: actions/upload-artifact@v4
         with:
           name: Kwrt-${{ github.event.inputs.profile }}-${{ github.run_number }}
-          path: ${{ env.BUILD_TARGET_DIR }}
+          path: |
+            ${{ env.BUILD_TARGET_DIR }}/*.bin
+            ${{ env.BUILD_TARGET_DIR }}/sha256sums
           retention-days: 7
