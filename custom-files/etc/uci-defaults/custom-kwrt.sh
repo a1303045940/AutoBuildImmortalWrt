@@ -57,6 +57,10 @@ uci set dhcp.@dnsmasq[0].port='54'
 uci set system.@system[0].hostname='HY3000'
 uci set network.lan.ipaddr='192.168.6.1'
 uci set system.@system[0].version="by 微信:Mr___zjz/OpenWrt 24.10.4"
+uci commit system
+uci commit network
+uci commit dhcp
+
 # 这个哈希对应的密码是 "password"
 sed -i 's|^root:[^:]*:|root:$1$V4UetPzk$CYXluq4wUazHjmCDBCqXF.:|' /etc/shadow
 
@@ -99,16 +103,29 @@ EOF
 fi
 uci commit
 
-# WiFi 设置
-uci set wireless.@wifi-iface[0].ssid="Openwrt-2.4G"
-uci set wireless.@wifi-iface[0].encryption='psk2'
-uci set wireless.@wifi-iface[0].key='password'
-
-uci set wireless.@wifi-iface[1].ssid="Openwrt-5G"
-uci set wireless.@wifi-iface[1].encryption='psk2'
-uci set wireless.@wifi-iface[1].key='password'
+# 4. WiFi 设置
+# ============================================
+# 强制设置 WiFi 名称，防止被 Hostname 覆盖
+# 使用循环批量设置，兼容多 radio 情况
+for radio in $(uci show wireless | grep "=wifi-device" | cut -d'.' -f2 | cut -d'=' -f1); do
+    # 简单的逻辑：如果是 radio0 设为 2.4G，radio1 设为 5G
+    # 实际情况请根据你的设备调整，或者统一设一个名字
+    if [ "$radio" = "radio0" ]; then
+        SSID="Openwrt-2.4G"
+    else
+        SSID="Openwrt-5G"
+    fi
+    
+    # 查找该 device 下的第一个 iface
+    iface=$(uci show wireless | grep "\.device='$radio'" | head -n 1 | cut -d'.' -f2)
+    
+    if [ -n "$iface" ]; then
+        uci set wireless.$iface.ssid="$SSID"
+        uci set wireless.$iface.encryption='psk2'
+        uci set wireless.$iface.key='password'
+    fi
+done
 uci commit wireless
-wifi reload
 # ============================================
 # 4. 修改系统版本信息
 # ============================================
