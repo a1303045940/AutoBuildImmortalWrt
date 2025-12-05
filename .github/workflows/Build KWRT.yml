@@ -180,23 +180,18 @@ jobs:
           echo "准备自定义文件和配置"
           echo "================================================"
           
-          # 创建自定义文件目录
-          mkdir -p files/etc/uci-defaults files/etc/config
-          
-          # ============================================
-          # # 1. 复制 99-custom.sh 脚本  
-          # # ============================================
-          # echo "📄 复制 uci-defaults 脚本..."
-          # if [ -f "${{ github.workspace }}/files/etc/uci-defaults/99-custom.sh" ]; then
-          #   cp ${{ github.workspace }}/files/etc/uci-defaults/99-custom.sh \
-          #      files/etc/uci-defaults/99-custom.sh
-          #   chmod +x files/etc/uci-defaults/99-custom.sh
-          #   echo "✅ 已复制 99-custom.sh"
-          #   echo "📋 脚本大小: $(du -h files/etc/uci-defaults/99-custom.sh | cut -f1)"
-          # else
-          #   echo "❌ 错误: 未找到源文件 ${{ github.workspace }}/files/etc/uci-defaults/99-custom.sh"
-          #   exit 1
-          # fi
+          # 创建基础目录
+            mkdir -p files/etc/uci-defaults files/etc/config files/etc/opkg
+            
+            # ============================================
+            # 1. 复制 custom-files 目录 (核心功能)
+            # ============================================
+            if [ -d "${{ github.workspace }}/custom-files" ]; then
+              echo "📂 复制 custom-files 目录..."
+              rsync -hav --exclude='.*' --exclude='*.md' \
+                ${{ github.workspace }}/custom-files/ files/
+              echo "✅ custom-files 已复制"
+            fi
           
           # ============================================
           # 2. 创建 pppoe-settings 配置文件（关键！）
@@ -225,10 +220,6 @@ jobs:
           # ============================================
           # 4. 复制其他配置
           # ============================================
-          if [ -d "${{ github.workspace }}/glinet" ]; then
-            cp -r ${{ github.workspace }}/glinet/* files/etc/uci-defaults/ 2>/dev/null || true
-            echo "✅ 已复制 glinet 配置"
-          fi
           
           if [ -d "${{ github.workspace }}/custom" ]; then
             cp -r ${{ github.workspace }}/custom/* files/etc/config/ 2>/dev/null || true
