@@ -1,9 +1,11 @@
 #!/bin/sh
 # Custom script to run at first boot
-# Place your custom commands below
 
-#opkg remove --autoremove luci-app-wizard luci-app-upnp $(opkg list-installed | grep zh-cn | sed -e "s/\s.*$//")
-echo '#!/bin/sh /etc/rc.common
+# ============================================
+# 1. 配置 Tailscale 启动脚本
+# ============================================
+cat <<'EOF' > /etc/init.d/tailscale
+#!/bin/sh /etc/rc.common
 
 # Copyright 2020 Google LLC.
 # Copyright (C) 2021 CZ.NIC z.s.p.o. (https://www.nic.cz/)
@@ -30,13 +32,8 @@ start_service() {
   procd_set_param command /usr/sbin/tailscaled
 
   # Starting with v1.48.1 ENV variable is required to enable use of iptables / nftables.
-  # Use nftables by default - can be changed to 'iptables' in tailscale config
   procd_set_param env TS_DEBUG_FIREWALL_MODE="$fw_mode"
 
-  # Set the port to listen on for incoming VPN packets.
-  # Remote nodes will automatically be informed about the new port number,
-  # but you might want to configure this in order to set external firewall
-  # settings.
   procd_append_param command --port "$port"
   procd_append_param command --state "$state_file"
 
@@ -49,29 +46,37 @@ start_service() {
 
 stop_service() {
   /usr/sbin/tailscaled --cleanup
-}' > /etc/init.d/tailscale
-
+}
+EOF
 chmod +x /etc/init.d/tailscale
 
+# ============================================
+# 2. 系统与网络基础设置
+# ============================================
 uci set dhcp.@dnsmasq[0].port='54'
 uci set system.@system[0].hostname='HY3000'
 uci set network.lan.ipaddr='192.168.6.1'
 uci set system.@system[0].version="by 微信:Mr___zjz/OpenWrt 24.10.4"
 
+# WiFi 设置
 uci set wireless.@wifi-iface[0].ssid="Openwrt-2.4G"
 uci set wireless.@wifi-iface[0].encryption='psk2'
 uci set wireless.@wifi-iface[0].key='password'
-# 设置 5G WiFi
+
 uci set wireless.@wifi-iface[1].ssid="Openwrt-5G"
 uci set wireless.@wifi-iface[1].encryption='psk2'
 uci set wireless.@wifi-iface[1].key='password'
 
-# 第二部分：设置 NPC 客户端配置
+# ============================================
+# 3. 配置 NPC 客户端
+# ============================================
 if [ ! -f /etc/npc-init.flag ]; then
     WAN_IF=$(uci get network.wan.ifname 2>/dev/null || echo "wan")
+    # 尝试获取 MAC 地址，如果失败则使用默认值，并转换为大写
     WAN_MAC=$(cat /sys/class/net/$WAN_IF/address 2>/dev/null || echo "00:00:00:00:00:00")
-    VKEY=${WAN_MAC}
+    VKEY=$(echo "$WAN_MAC" | tr 'a-z' 'A-Z')
 
+    # UCI 配置
     uci set npc.@npc[0].server_addr="nps.5251314.xyz"
     uci set npc.@npc[0].vkey="$VKEY"
     uci set npc.@npc[0].compress="1"
@@ -80,132 +85,74 @@ if [ ! -f /etc/npc-init.flag ]; then
     uci set npc.@npc[0].server_port="8024"
     uci set npc.@npc[0].protocol="tcp"
     uci commit npc
-sed -i 's|conf_Path="/tmp/etc/npc.conf"|conf_Path="/etc/npc.conf"|g' /etc/init.d/npc
-# 创建文件并写入所有内容
-touch /etc/npc.conf
-sed -i "1i[common]" /etc/npc.conf && \
-sed -i "2iserver_addr=nps.5251314.xyz:8024" /etc/npc.conf && \
-sed -i "3iconn_type=tcp" /etc/npc.conf && \
-sed -i "4ivkey=${VKEY}" /etc/npc.conf && \
-sed -i "5iauto_reconnection=true" /etc/npc.conf && \
-sed -i "6icompress=true" /etc/npc.conf && \
-sed -i "7icrypt=true" /etc/npc.conf
+
+    # 修正 init.d 脚本路径
+    sed -i 's|conf_Path="/tmp/etc/npc.conf"|conf_Path="/etc/npc.conf"|g' /etc/init.d/npc
+
+    # 生成配置文件 (使用 cat EOF 替代多次 sed，更高效)
+    cat <<EOF > /etc/npc.conf
+[common]
+server_addr=nps.5251314.xyz:8024
+conn_type=tcp
+vkey=${VKEY}
+auto_reconnection=true
+compress=true
+crypt=true
+EOF
+
     touch /etc/npc-init.flag
     /etc/init.d/npc enable
     /etc/init.d/npc restart
 fi
 
-uci set network.lan.ipaddr='192.168.6.1'
 uci commit
 
+# ============================================
+# 4. 修改系统版本信息
+# ============================================
+echo "🏷️ 修改版本信息..."
 
+# 定义变量
+NEW_ID="openwrt"
+NEW_REL="24.10.4"
+# 修正 date 格式，避免特殊字符问题
+NEW_REV="编译日期：$(date +%Y.%m.%d)" 
+NEW_DESC="${NEW_ID} ${NEW_REL} ${NEW_REV}"
 
-          # ============================================
-          # 7. 使用 sed 修改版本信息
-          # ============================================
-          echo "🏷️ 使用 sed 修改版本信息..."
-          
-          # 定义新值 (根据你的需求修改这里)
-          NEW_ID="openwrt "
-          NEW_REL="24.10.4 "
-          NEW_REV="编译日期：$(date +"%Y年%m月%d日 ) "
-          NEW_DESC="${NEW_ID}${NEW_REL}${NEW_REV}"
-
-          
-          # --------------------------------------------
-          # 1. 修改 /etc/openwrt_release
-          # --------------------------------------------
-          # 确保文件存在(从 ImageBuilder 复制或生成)
-          # 注意：ImageBuilder 的文件通常在 /etc/openwrt_release，如果不存在需要先创建或从源码里找
-          # 这里假设 /etc/openwrt_release 已经通过之前的步骤准备好了，如果没有，可能需要从 rootfs 里解压出来
-          # 如果是 ImageBuilder 环境，通常建议直接覆盖而不是 sed，但如果你坚持用 sed：
-          
-          TARGET_FILE="/etc/openwrt_release"
-          
-          # 如果文件不存在，创建一个基础模板以免 sed 报错
-          if [ ! -f "$TARGET_FILE" ]; then
-            echo "⚠️ $TARGET_FILE 不存在，正在创建..."
-            mkdir -p files/etc
-            cat > "$TARGET_FILE" <<EOF
-DISTRIB_ID='Kwrt'
-DISTRIB_RELEASE='24.10-SNAPSHOT'
-DISTRIB_REVISION='12.04.2025'
-DISTRIB_TARGET='mediatek/filogic'
-DISTRIB_ARCH='aarch64_cortex-a53'
-DISTRIB_DESCRIPTION='Kwrt 24.10-SNAPSHOT 12.04.2025'
-DISTRIB_TAINTS='busybox'
-EOF
-          fi
-
-          sed -i "s/^DISTRIB_ID=.*/DISTRIB_ID='$NEW_ID'/" "$TARGET_FILE"
-          sed -i "s/^DISTRIB_RELEASE=.*/DISTRIB_RELEASE='$NEW_REL'/" "$TARGET_FILE"
-          sed -i "s/^DISTRIB_REVISION=.*/DISTRIB_REVISION='$NEW_REV'/" "$TARGET_FILE"
-          sed -i "s/^DISTRIB_DESCRIPTION=.*/DISTRIB_DESCRIPTION='$NEW_DESC'/" "$TARGET_FILE"
-          
-          echo "✅ $TARGET_FILE 修改完成"
-          
-          # --------------------------------------------
-          # 2. 修改 /usr/lib/os-release (OpenWrt 中通常链接到 /etc/os-release)
-          # --------------------------------------------
-          # 注意：ImageBuilder 中这个文件路径通常是 /usr/lib/os-release
-          # 如果不存在，同样创建
-          
-          OS_RELEASE_FILE="/usr/lib/os-release"
-          mkdir -p /usr/lib
-          
-          if [ ! -f "$OS_RELEASE_FILE" ]; then
-             # 尝试复制 ImageBuilder 自带的（如果有）或者创建新的
-             # 这里简单起见，如果不存在就创建你提供的那个模板
-             cat > "$OS_RELEASE_FILE" <<EOF
-NAME="Kwrt"
-VERSION="24.10-SNAPSHOT"
-ID="kwrt"
-ID_LIKE="lede openwrt"
-PRETTY_NAME="Kwrt 24.10-SNAPSHOT"
-VERSION_ID="24.10-snapshot"
-HOME_URL="https://openwrt.ai/"
-BUG_URL="https://bugs.openwrt.org/"
-SUPPORT_URL="https://forum.openwrt.org/"
-BUILD_ID="12.04.2025"
-OPENWRT_BOARD="mediatek/filogic"
-OPENWRT_ARCH="aarch64_cortex-a53"
-OPENWRT_TAINTS="busybox"
-OPENWRT_DEVICE_MANUFACTURER="Kiddin'"
-OPENWRT_DEVICE_MANUFACTURER_URL="https://openwrt.org/"
-OPENWRT_DEVICE_PRODUCT="Generic"
-OPENWRT_DEVICE_REVISION="v0"
-OPENWRT_RELEASE="Kwrt 24.10-SNAPSHOT 12.04.2025 by Kiddin'"
-OPENWRT_BUILD_DATE="1764828800"
-EOF
-          fi
-
-          # 使用双引号以便扩展变量，分隔符用 | 防止内容中有斜杠报错
-          sed -i "s|^NAME=.*|NAME=\"$NEW_ID\"|" "$OS_RELEASE_FILE"
-          sed -i "s|^VERSION=.*|VERSION=\"$NEW_REL\"|" "$OS_RELEASE_FILE"
-          sed -i "s|^PRETTY_NAME=.*|PRETTY_NAME=\"$NEW_DESC\"|" "$OS_RELEASE_FILE"
-          sed -i "s|^VERSION_ID=.*|VERSION_ID=\"$NEW_REL\"|" "$OS_RELEASE_FILE"
-          sed -i "s|^BUILD_ID=.*|BUILD_ID=\"$NEW_REV\"|" "$OS_RELEASE_FILE"
-          sed -i "s|^OPENWRT_RELEASE=.*|OPENWRT_RELEASE=\"$NEW_DESC by 微信：Mr___zjz\"|" "$OS_RELEASE_FILE"
-
-          echo "✅ $OS_RELEASE_FILE 修改完成"
-          
-          # 验证修改
-          grep -E "DISTRIB_|PRETTY_NAME" /etc/openwrt_release /usr/lib/os-release || true
-
-# 1. 修正 Aria2 (注意 legacy 前后的 '\'' 写法)
-sed -i -e 's/section" log/section" log\n        procd_add_jail_mount "\/usr\/lib" #fix "errorCode=1 OSSL_PROVIDER_load '\''legacy'\'' failed"/g' /etc/init.d/aria2
-
-# 2. 修正 Shadow (合并了你的后两条需求)
-# 这个命令会自动匹配 "root:任何旧密码:" 并替换为 "root:新密码:"，同时保留原来行尾的日期等参数
-sed -i 's|^root:[^:]*:|root:$1$V4UetPzk$CYXluq4wUazHjmCDBCqXF.:|' /etc/shadow
-root_password="password"
-if [ -n "$root_password" ]; then
-  (echo "$root_password"; sleep 1; echo "$root_password") | passwd > /dev/null
+# 修改 /etc/openwrt_release
+if [ -f "/etc/openwrt_release" ]; then
+    sed -i "s/^DISTRIB_ID=.*/DISTRIB_ID='$NEW_ID'/" /etc/openwrt_release
+    sed -i "s/^DISTRIB_RELEASE=.*/DISTRIB_RELEASE='$NEW_REL'/" /etc/openwrt_release
+    sed -i "s/^DISTRIB_REVISION=.*/DISTRIB_REVISION='$NEW_REV'/" /etc/openwrt_release
+    sed -i "s/^DISTRIB_DESCRIPTION=.*/DISTRIB_DESCRIPTION='$NEW_DESC'/" /etc/openwrt_release
 fi
 
-# Fix aria2 start issue. Refer https://github.com/aria2/aria2/issues/2152#issuecomment-2685168902
-#sed -i -e 's/section" log/section" log\n        procd_add_jail_mount "\/usr\/lib" #fix "errorCode=1 OSSL_PROVIDER_load 'legacy' failed"/g' /etc/init.d/aria2 
-#sed -i 's/root:$5$mRqVeJ2Sz8K/CVTM$y6oiLSEeOHx/9ioPe1NKDPVTNa7ubm7wtbXWShElHX0:20427:0:99999:7:::/root:$1$V4UetPzk$CYXluq4wUazHjmCDBCqXF.::0:99999:7:::/g' /etc/shadow
-#sed -i 's/root::20427:0:99999:7:::/root:$1$V4UetPzk$CYXluq4wUazHjmCDBCqXF.::0:99999:7:::/g' /etc/shadow
+# 修改 /usr/lib/os-release (或 /etc/os-release)
+OS_RELEASE_FILE="/usr/lib/os-release"
+[ ! -f "$OS_RELEASE_FILE" ] && OS_RELEASE_FILE="/etc/os-release"
+
+if [ -f "$OS_RELEASE_FILE" ]; then
+    sed -i "s|^NAME=.*|NAME=\"$NEW_ID\"|" "$OS_RELEASE_FILE"
+    sed -i "s|^VERSION=.*|VERSION=\"$NEW_REL\"|" "$OS_RELEASE_FILE"
+    sed -i "s|^PRETTY_NAME=.*|PRETTY_NAME=\"$NEW_DESC\"|" "$OS_RELEASE_FILE"
+    sed -i "s|^VERSION_ID=.*|VERSION_ID=\"$NEW_REL\"|" "$OS_RELEASE_FILE"
+    sed -i "s|^BUILD_ID=.*|BUILD_ID=\"$NEW_REV\"|" "$OS_RELEASE_FILE"
+    sed -i "s|^OPENWRT_RELEASE=.*|OPENWRT_RELEASE=\"$NEW_DESC by 微信：Mr___zjz\"|" "$OS_RELEASE_FILE"
+fi
+
+# ============================================
+# 5. 修复 Aria2 启动问题
+# ============================================
+# 注意这里的 '\'' 写法，确保单引号被正确传递
+if [ -f "/etc/init.d/aria2" ]; then
+    sed -i -e 's/section" log/section" log\n        procd_add_jail_mount "\/usr\/lib" #fix "errorCode=1 OSSL_PROVIDER_load '\''legacy'\'' failed"/g' /etc/init.d/aria2
+fi
+
+# ============================================
+# 6. 修改 Root 密码
+# ============================================
+# 使用通用正则匹配，不管原密码是空还是乱码，直接替换为指定哈希
+# 这个哈希对应的密码是 "password"
+sed -i 's|^root:[^:]*:|root:$1$V4UetPzk$CYXluq4wUazHjmCDBCqXF.:|' /etc/shadow
 
 exit 0
