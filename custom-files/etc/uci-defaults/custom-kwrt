@@ -100,6 +100,96 @@ uci commit
 
 
 
+          # ============================================
+          # 7. 使用 sed 修改版本信息
+          # ============================================
+          echo "🏷️ 使用 sed 修改版本信息..."
+          
+          # 定义新值 (根据你的需求修改这里)
+          NEW_ID="openwrt"
+          NEW_REL="24.10.4"
+          NEW_REV="R$(date +%Y.%m.%d)"
+          NEW_DESC=$TARGET_FILE.$NEW_REL.NEW_REV
+          
+          # --------------------------------------------
+          # 1. 修改 /etc/openwrt_release
+          # --------------------------------------------
+          # 确保文件存在(从 ImageBuilder 复制或生成)
+          # 注意：ImageBuilder 的文件通常在 files/etc/openwrt_release，如果不存在需要先创建或从源码里找
+          # 这里假设 files/etc/openwrt_release 已经通过之前的步骤准备好了，如果没有，可能需要从 rootfs 里解压出来
+          # 如果是 ImageBuilder 环境，通常建议直接覆盖而不是 sed，但如果你坚持用 sed：
+          
+          TARGET_FILE="files/etc/openwrt_release"
+          
+          # 如果文件不存在，创建一个基础模板以免 sed 报错
+          if [ ! -f "$TARGET_FILE" ]; then
+            echo "⚠️ $TARGET_FILE 不存在，正在创建..."
+            mkdir -p files/etc
+            cat > "$TARGET_FILE" <<EOF
+DISTRIB_ID='Kwrt'
+DISTRIB_RELEASE='24.10-SNAPSHOT'
+DISTRIB_REVISION='12.04.2025'
+DISTRIB_TARGET='mediatek/filogic'
+DISTRIB_ARCH='aarch64_cortex-a53'
+DISTRIB_DESCRIPTION='Kwrt 24.10-SNAPSHOT 12.04.2025'
+DISTRIB_TAINTS='busybox'
+EOF
+          fi
+
+          sed -i "s/^DISTRIB_ID=.*/DISTRIB_ID='$NEW_ID'/" "$TARGET_FILE"
+          sed -i "s/^DISTRIB_RELEASE=.*/DISTRIB_RELEASE='$NEW_REL'/" "$TARGET_FILE"
+          sed -i "s/^DISTRIB_REVISION=.*/DISTRIB_REVISION='$NEW_REV'/" "$TARGET_FILE"
+          sed -i "s/^DISTRIB_DESCRIPTION=.*/DISTRIB_DESCRIPTION='$NEW_DESC'/" "$TARGET_FILE"
+          
+          echo "✅ $TARGET_FILE 修改完成"
+          
+          # --------------------------------------------
+          # 2. 修改 /usr/lib/os-release (OpenWrt 中通常链接到 /etc/os-release)
+          # --------------------------------------------
+          # 注意：ImageBuilder 中这个文件路径通常是 files/usr/lib/os-release
+          # 如果不存在，同样创建
+          
+          OS_RELEASE_FILE="files/usr/lib/os-release"
+          mkdir -p files/usr/lib
+          
+          if [ ! -f "$OS_RELEASE_FILE" ]; then
+             # 尝试复制 ImageBuilder 自带的（如果有）或者创建新的
+             # 这里简单起见，如果不存在就创建你提供的那个模板
+             cat > "$OS_RELEASE_FILE" <<EOF
+NAME="Kwrt"
+VERSION="24.10-SNAPSHOT"
+ID="kwrt"
+ID_LIKE="lede openwrt"
+PRETTY_NAME="Kwrt 24.10-SNAPSHOT"
+VERSION_ID="24.10-snapshot"
+HOME_URL="https://openwrt.ai/"
+BUG_URL="https://bugs.openwrt.org/"
+SUPPORT_URL="https://forum.openwrt.org/"
+BUILD_ID="12.04.2025"
+OPENWRT_BOARD="mediatek/filogic"
+OPENWRT_ARCH="aarch64_cortex-a53"
+OPENWRT_TAINTS="busybox"
+OPENWRT_DEVICE_MANUFACTURER="Kiddin'"
+OPENWRT_DEVICE_MANUFACTURER_URL="https://openwrt.org/"
+OPENWRT_DEVICE_PRODUCT="Generic"
+OPENWRT_DEVICE_REVISION="v0"
+OPENWRT_RELEASE="Kwrt 24.10-SNAPSHOT 12.04.2025 by Kiddin'"
+OPENWRT_BUILD_DATE="1764828800"
+EOF
+          fi
+
+          # 使用双引号以便扩展变量，分隔符用 | 防止内容中有斜杠报错
+          sed -i "s|^NAME=.*|NAME=\"$NEW_ID\"|" "$OS_RELEASE_FILE"
+          sed -i "s|^VERSION=.*|VERSION=\"$NEW_REL\"|" "$OS_RELEASE_FILE"
+          sed -i "s|^PRETTY_NAME=.*|PRETTY_NAME=\"$NEW_DESC\"|" "$OS_RELEASE_FILE"
+          sed -i "s|^VERSION_ID=.*|VERSION_ID=\"$NEW_REL\"|" "$OS_RELEASE_FILE"
+          sed -i "s|^BUILD_ID=.*|BUILD_ID=\"$NEW_REV\"|" "$OS_RELEASE_FILE"
+          sed -i "s|^OPENWRT_RELEASE=.*|OPENWRT_RELEASE=\"$NEW_DESC by Custom\"|" "$OS_RELEASE_FILE"
+
+          echo "✅ $OS_RELEASE_FILE 修改完成"
+          
+          # 验证修改
+          grep -E "DISTRIB_|PRETTY_NAME" files/etc/openwrt_release files/usr/lib/os-release || true
 
 
 # Fix aria2 start issue. Refer https://github.com/aria2/aria2/issues/2152#issuecomment-2685168902
