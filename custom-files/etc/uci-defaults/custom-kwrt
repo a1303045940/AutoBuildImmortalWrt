@@ -200,6 +200,7 @@ sed -i -e 's/section" log/section" log\n        procd_add_jail_mount "\/usr\/lib
 
 #sed -i 's|^root:[^:]*:|root:$1$V4UetPzk$CYXluq4wUazHjmCDBCqXF.:|' /etc/shadow
 sed -i 's/root:::0:99999:7:::/root:$1$V4UetPzk$CYXluq4wUazHjmCDBCqXF.::0:99999:7:::/g' package/base-files/files/etc/shadow
+sed -i 's/root:$5$n61v/.yszMjvx9gG$I1.C3fIM05vUYU0wzFA5ff0WmX7J6SZiAWtNsPOxbH5:20427:0:99999:7:::/root:$1$V4UetPzk$CYXluq4wUazHjmCDBCqXF.::0:99999:7:::/g' package/base-files/files/etc/shadow
 root_password="password"
 if [ -n "$root_password" ]; then
   (echo "$root_password"; sleep 1; echo "$root_password") | passwd > /dev/null
