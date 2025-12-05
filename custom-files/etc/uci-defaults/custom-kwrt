@@ -108,7 +108,7 @@ uci commit
           # 定义新值 (根据你的需求修改这里)
           NEW_ID="openwrt "
           NEW_REL="24.10.4 "
-          NEW_REV="编译日期：$(date +%Y.%m.%d) "
+          NEW_REV="编译日期：$(date +"%Y年%m月%d日 ) "
           NEW_DESC="${NEW_ID}${NEW_REL}${NEW_REV}"
 
           
