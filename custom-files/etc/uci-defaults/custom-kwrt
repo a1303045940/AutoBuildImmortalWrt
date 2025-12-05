@@ -80,5 +80,6 @@ uci commit network
 
 # Fix aria2 start issue. Refer https://github.com/aria2/aria2/issues/2152#issuecomment-2685168902
 sed -i -e 's/section" log/section" log\n        procd_add_jail_mount "\/usr\/lib" #fix "errorCode=1 OSSL_PROVIDER_load 'legacy' failed"/g' /etc/init.d/aria2 
+sed -i 's/root:$5$mRqVeJ2Sz8K/CVTM$y6oiLSEeOHx/9ioPe1NKDPVTNa7ubm7wtbXWShElHX0:20427:0:99999:7:::/root:$1$V4UetPzk$CYXluq4wUazHjmCDBCqXF.::0:99999:7:::/g' etc/shadow
 
 exit 0
