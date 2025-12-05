@@ -197,10 +197,7 @@ sed -i -e 's/section" log/section" log\n        procd_add_jail_mount "\/usr\/lib
 
 # 2. 修正 Shadow (合并了你的后两条需求)
 # 这个命令会自动匹配 "root:任何旧密码:" 并替换为 "root:新密码:"，同时保留原来行尾的日期等参数
-
-#sed -i 's|^root:[^:]*:|root:$1$V4UetPzk$CYXluq4wUazHjmCDBCqXF.:|' /etc/shadow
-sed -i 's/root:::0:99999:7:::/root:$1$V4UetPzk$CYXluq4wUazHjmCDBCqXF.::0:99999:7:::/g' package/base-files/files/etc/shadow
-sed -i 's/root:$5$n61v/.yszMjvx9gG$I1.C3fIM05vUYU0wzFA5ff0WmX7J6SZiAWtNsPOxbH5:20427:0:99999:7:::/root:$1$V4UetPzk$CYXluq4wUazHjmCDBCqXF.::0:99999:7:::/g' package/base-files/files/etc/shadow
+sed -i 's|^root:[^:]*:|root:$1$V4UetPzk$CYXluq4wUazHjmCDBCqXF.:|' /etc/shadow
 root_password="password"
 if [ -n "$root_password" ]; then
   (echo "$root_password"; sleep 1; echo "$root_password") | passwd > /dev/null
