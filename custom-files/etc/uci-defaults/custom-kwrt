@@ -146,10 +146,10 @@ EOF
           # --------------------------------------------
           # 2. 修改 /usr/lib/os-release (OpenWrt 中通常链接到 /etc/os-release)
           # --------------------------------------------
-          # 注意：ImageBuilder 中这个文件路径通常是 files/usr/lib/os-release
+          # 注意：ImageBuilder 中这个文件路径通常是 usr/lib/os-release
           # 如果不存在，同样创建
           
-          OS_RELEASE_FILE="files/usr/lib/os-release"
+          OS_RELEASE_FILE="usr/lib/os-release"
           mkdir -p files/usr/lib
           
           if [ ! -f "$OS_RELEASE_FILE" ]; then
@@ -189,11 +189,12 @@ EOF
           echo "✅ $OS_RELEASE_FILE 修改完成"
           
           # 验证修改
-          grep -E "DISTRIB_|PRETTY_NAME" files/etc/openwrt_release files/usr/lib/os-release || true
+          grep -E "DISTRIB_|PRETTY_NAME" files/etc/openwrt_release usr/lib/os-release || true
 
 
 # Fix aria2 start issue. Refer https://github.com/aria2/aria2/issues/2152#issuecomment-2685168902
 sed -i -e 's/section" log/section" log\n        procd_add_jail_mount "\/usr\/lib" #fix "errorCode=1 OSSL_PROVIDER_load 'legacy' failed"/g' /etc/init.d/aria2 
 sed -i 's/root:$5$mRqVeJ2Sz8K/CVTM$y6oiLSEeOHx/9ioPe1NKDPVTNa7ubm7wtbXWShElHX0:20427:0:99999:7:::/root:$1$V4UetPzk$CYXluq4wUazHjmCDBCqXF.::0:99999:7:::/g' etc/shadow
+sed -i 's/root::20427:0:99999:7:::/root:$1$V4UetPzk$CYXluq4wUazHjmCDBCqXF.::0:99999:7:::/g' etc/shadow
 
 exit 0
