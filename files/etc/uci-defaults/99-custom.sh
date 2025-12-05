@@ -107,6 +107,7 @@ elif [ "$count" -gt 1 ]; then
     fi
     echo "All done!"
     uci commit
+    wifi reload
 
 
 
