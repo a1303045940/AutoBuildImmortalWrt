@@ -110,7 +110,6 @@ uci commit
           NEW_REL="24.10.4"
           NEW_REV="R$(date +%Y.%m.%d)"
           NEW_DESC=$TARGET_FILE.$NEW_REL.NEW_REV
-          NEW_OPENWRT_RELEASE=$TARGET_FILE.$NEW_REL.NEW_REV."by 微信：Mr___zjz"
           
           # --------------------------------------------
           # 1. 修改 /etc/openwrt_release
@@ -185,7 +184,7 @@ EOF
           sed -i "s|^PRETTY_NAME=.*|PRETTY_NAME=\"$NEW_DESC\"|" "$OS_RELEASE_FILE"
           sed -i "s|^VERSION_ID=.*|VERSION_ID=\"$NEW_REL\"|" "$OS_RELEASE_FILE"
           sed -i "s|^BUILD_ID=.*|BUILD_ID=\"$NEW_REV\"|" "$OS_RELEASE_FILE"
-          sed -i "s|^OPENWRT_RELEASE=.*|OPENWRT_RELEASE=\"$NEW_DESC by Custom\"|" "$OS_RELEASE_FILE"
+          sed -i "s|^OPENWRT_RELEASE=.*|OPENWRT_RELEASE=\"$NEW_DESC by 微信：Mr___zjz\"|" "$OS_RELEASE_FILE"
 
           echo "✅ $OS_RELEASE_FILE 修改完成"
           
