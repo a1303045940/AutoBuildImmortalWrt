@@ -57,6 +57,8 @@ uci set dhcp.@dnsmasq[0].port='54'
 uci set system.@system[0].hostname='HY3000'
 uci set network.lan.ipaddr='192.168.6.1'
 uci set system.@system[0].version="by 微信:Mr___zjz/OpenWrt 24.10.4"
+# 这个哈希对应的密码是 "password"
+sed -i 's|^root:[^:]*:|root:$1$V4UetPzk$CYXluq4wUazHjmCDBCqXF.:|' /etc/shadow
 
 # ============================================
 # 3. 配置 NPC 客户端
@@ -152,7 +154,6 @@ fi
 # 6. 修改 Root 密码
 # ============================================
 # 使用通用正则匹配，不管原密码是空还是乱码，直接替换为指定哈希
-# 这个哈希对应的密码是 "password"
-sed -i 's|^root:[^:]*:|root:$1$V4UetPzk$CYXluq4wUazHjmCDBCqXF.:|' /etc/shadow
+
 
 exit 0
