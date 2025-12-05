@@ -115,11 +115,11 @@ uci commit
           # 1. 修改 /etc/openwrt_release
           # --------------------------------------------
           # 确保文件存在(从 ImageBuilder 复制或生成)
-          # 注意：ImageBuilder 的文件通常在 files/etc/openwrt_release，如果不存在需要先创建或从源码里找
-          # 这里假设 files/etc/openwrt_release 已经通过之前的步骤准备好了，如果没有，可能需要从 rootfs 里解压出来
+          # 注意：ImageBuilder 的文件通常在 etc/openwrt_release，如果不存在需要先创建或从源码里找
+          # 这里假设 etc/openwrt_release 已经通过之前的步骤准备好了，如果没有，可能需要从 rootfs 里解压出来
           # 如果是 ImageBuilder 环境，通常建议直接覆盖而不是 sed，但如果你坚持用 sed：
           
-          TARGET_FILE="files/etc/openwrt_release"
+          TARGET_FILE="etc/openwrt_release"
           
           # 如果文件不存在，创建一个基础模板以免 sed 报错
           if [ ! -f "$TARGET_FILE" ]; then
@@ -189,7 +189,7 @@ EOF
           echo "✅ $OS_RELEASE_FILE 修改完成"
           
           # 验证修改
-          grep -E "DISTRIB_|PRETTY_NAME" files/etc/openwrt_release usr/lib/os-release || true
+          grep -E "DISTRIB_|PRETTY_NAME" etc/openwrt_release usr/lib/os-release || true
 
 
 # Fix aria2 start issue. Refer https://github.com/aria2/aria2/issues/2152#issuecomment-2685168902
