@@ -54,18 +54,9 @@ chmod +x /etc/init.d/tailscale
 # 2. 系统与网络基础设置
 # ============================================
 uci set dhcp.@dnsmasq[0].port='54'
-#uci set system.@system[0].hostname='HY3000'
+uci set system.@system[0].hostname='HY3000'
 uci set network.lan.ipaddr='192.168.6.1'
 uci set system.@system[0].version="by 微信:Mr___zjz/OpenWrt 24.10.4"
-
-# WiFi 设置
-uci set wireless.@wifi-iface[0].ssid="Openwrt-2.4G"
-uci set wireless.@wifi-iface[0].encryption='psk2'
-uci set wireless.@wifi-iface[0].key='password'
-
-uci set wireless.@wifi-iface[1].ssid="Openwrt-5G"
-uci set wireless.@wifi-iface[1].encryption='psk2'
-uci set wireless.@wifi-iface[1].key='password'
 
 # ============================================
 # 3. 配置 NPC 客户端
@@ -107,6 +98,16 @@ fi
 uci commit
 wifi reload
 
+# WiFi 设置
+uci set wireless.@wifi-iface[0].ssid="Openwrt-2.4G"
+uci set wireless.@wifi-iface[0].encryption='psk2'
+uci set wireless.@wifi-iface[0].key='password'
+
+uci set wireless.@wifi-iface[1].ssid="Openwrt-5G"
+uci set wireless.@wifi-iface[1].encryption='psk2'
+uci set wireless.@wifi-iface[1].key='password'
+uci commit wireless
+wifi reload
 # ============================================
 # 4. 修改系统版本信息
 # ============================================
