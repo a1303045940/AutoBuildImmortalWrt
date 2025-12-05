@@ -96,7 +96,6 @@ EOF
     /etc/init.d/npc restart
 fi
 uci commit
-wifi reload
 
 # WiFi 设置
 uci set wireless.@wifi-iface[0].ssid="Openwrt-2.4G"
