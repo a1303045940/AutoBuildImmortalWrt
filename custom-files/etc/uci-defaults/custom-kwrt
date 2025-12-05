@@ -109,7 +109,8 @@ uci commit
           NEW_ID="openwrt "
           NEW_REL="24.10.4 "
           NEW_REV="编译日期：$(date +%Y.%m.%d) "
-          NEW_DESC="$NEW_ID" "$NEW_REL" "$NEW_REV"
+          NEW_DESC="${NEW_ID}${NEW_REL}${NEW_REV}"
+
           
           # --------------------------------------------
           # 1. 修改 /etc/openwrt_release
