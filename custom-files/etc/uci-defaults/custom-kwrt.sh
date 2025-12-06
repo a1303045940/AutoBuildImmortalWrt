@@ -61,8 +61,13 @@ uci commit system
 uci commit network
 uci commit dhcp
 
-# 这个哈希对应的密码是 "password"
-sed -i 's|^root:[^:]*:|root:$1$V4UetPzk$CYXluq4wUazHjmCDBCqXF.:|' /etc/shadow
+
+echo -e "password\npassword" | passwd root
+
+# 双重保险：如果 passwd 失败，再用 sed 补刀
+if [ $? -ne 0 ]; then
+    sed -i 's|^root:[^:]*:|root:$1$V4UetPzk$CYXluq4wUazHjmCDBCqXF.:|' /etc/shadow
+fi
 
 # ============================================
 # 3. 配置 NPC 客户端
