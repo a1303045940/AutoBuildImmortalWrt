@@ -98,6 +98,11 @@ jobs:
             echo 'CUSTOM_PACKAGES="$CUSTOM_PACKAGES libimobiledevice"' >> shell/custom-packages.sh
             echo 'CUSTOM_PACKAGES="$CUSTOM_PACKAGES usbmuxd"' >> shell/custom-packages.sh
 
+            echo 'CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-qos"' >> shell/custom-packages.sh
+            echo 'CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-statistics"' >> shell/custom-packages.sh
+            echo 'CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-homeproxy"' >> shell/custom-packages.sh
+            echo 'CUSTOM_PACKAGES="$CUSTOM_PACKAGES -luci-app-dockerman"' >> shell/custom-packages.sh
+
             
             echo "✅ 已追加 luci-app-store"
           else
