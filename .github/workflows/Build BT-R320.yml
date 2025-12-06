@@ -91,8 +91,8 @@ jobs:
             
             echo 'CUSTOM_PACKAGES="$CUSTOM_PACKAGES kmod-usb-net"' >> shell/custom-packages.sh
             echo 'CUSTOM_PACKAGES="$CUSTOM_PACKAGES kmod-usb-net-rndis"' >> shell/custom-packages.sh
-            echo 'CUSTOM_PACKAGES="$CUSTOM_PACKAGES kmod-usb-net-cdc-ether"' >> shell/custom-packages.sh
-            echo 'CUSTOM_PACKAGES="$CUSTOM_PACKAGES CONFIG_PACKAGE_kmod-usb-net-cdc-ether"' >> shell/custom-packages.sh
+            #echo 'CUSTOM_PACKAGES="$CUSTOM_PACKAGES kmod-usb-net-cdc-ether"' >> shell/custom-packages.sh
+            #echo 'CUSTOM_PACKAGES="$CUSTOM_PACKAGES CONFIG_PACKAGE_kmod-usb-net-cdc-ether"' >> shell/custom-packages.sh
             echo 'CUSTOM_PACKAGES="$CUSTOM_PACKAGES usbutils"' >> shell/custom-packages.sh
             echo 'CUSTOM_PACKAGES="$CUSTOM_PACKAGES kmod-usb-net-ipheth"' >> shell/custom-packages.sh
             echo 'CUSTOM_PACKAGES="$CUSTOM_PACKAGES libimobiledevice"' >> shell/custom-packages.sh
