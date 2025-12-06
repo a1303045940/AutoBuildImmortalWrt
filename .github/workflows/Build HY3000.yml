@@ -86,18 +86,6 @@ jobs:
           if [ "${{ github.event.inputs.enable_store }}" == "true" ]; then
             mkdir -p shell
             echo 'CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-store"' >> shell/custom-packages.sh
-            echo 'CUSTOM_PACKAGES="$CUSTOM_PACKAGES automount"' >> shell/custom-packages.sh
-            echo 'CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-usb-printer"' >> shell/custom-packages.sh
-            
-            echo 'CUSTOM_PACKAGES="$CUSTOM_PACKAGES kmod-usb-net"' >> shell/custom-packages.sh
-            echo 'CUSTOM_PACKAGES="$CUSTOM_PACKAGES kmod-usb-net-rndis"' >> shell/custom-packages.sh
-            #echo 'CUSTOM_PACKAGES="$CUSTOM_PACKAGES kmod-usb-net-cdc-ether"' >> shell/custom-packages.sh
-            #echo 'CUSTOM_PACKAGES="$CUSTOM_PACKAGES CONFIG_PACKAGE_kmod-usb-net-cdc-ether"' >> shell/custom-packages.sh
-            echo 'CUSTOM_PACKAGES="$CUSTOM_PACKAGES usbutils"' >> shell/custom-packages.sh
-            echo 'CUSTOM_PACKAGES="$CUSTOM_PACKAGES kmod-usb-net-ipheth"' >> shell/custom-packages.sh
-            echo 'CUSTOM_PACKAGES="$CUSTOM_PACKAGES libimobiledevice"' >> shell/custom-packages.sh
-            echo 'CUSTOM_PACKAGES="$CUSTOM_PACKAGES usbmuxd"' >> shell/custom-packages.sh
-
             
             echo "✅ 已追加 luci-app-store"
           else
