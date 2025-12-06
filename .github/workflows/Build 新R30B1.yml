@@ -10,7 +10,7 @@ on:
         options:
           - cmcc_rax3000m-nand
           - sl_3000-emmc
-        default: sl_3000-emmc
+        default: cmcc_rax3000m-nand
       custom_router_ip:
         description: "请设置路由器的管理地址 格式:192.168.x.1"
         required: true
@@ -87,9 +87,9 @@ jobs:
             mkdir -p shell
             echo 'CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-store"' >> shell/custom-packages.sh
 
-            echo 'CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-qos"' >> shell/custom-packages.sh
-            echo 'CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-statistics"' >> shell/custom-packages.sh
-            echo 'CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-homeproxy"' >> shell/custom-packages.sh
+            echo 'CUSTOM_PACKAGES="$CUSTOM_PACKAGES -luci-app-qos"' >> shell/custom-packages.sh
+            echo 'CUSTOM_PACKAGES="$CUSTOM_PACKAGES -luci-app-statistics"' >> shell/custom-packages.sh
+            echo 'CUSTOM_PACKAGES="$CUSTOM_PACKAGES -luci-app-homeproxy"' >> shell/custom-packages.sh
             echo 'CUSTOM_PACKAGES="$CUSTOM_PACKAGES -luci-app-dockerman"' >> shell/custom-packages.sh
 
             
