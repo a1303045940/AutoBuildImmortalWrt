@@ -87,6 +87,7 @@ jobs:
             mkdir -p shell
             echo 'CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-store"' >> shell/custom-packages.sh
             echo 'CUSTOM_PACKAGES="$CUSTOM_PACKAGES automount"' >> shell/custom-packages.sh
+            echo 'CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-usb-printer"' >> shell/custom-packages.sh
             
             echo 'CUSTOM_PACKAGES="$CUSTOM_PACKAGES kmod-usb-net"' >> shell/custom-packages.sh
             echo 'CUSTOM_PACKAGES="$CUSTOM_PACKAGES kmod-usb-net-rndis"' >> shell/custom-packages.sh
