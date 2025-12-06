@@ -1,0 +1,395 @@
+name: Build BT-R320
+
+on:
+  workflow_dispatch:
+    inputs:
+      profile:
+        type: choice
+        description: "请选择mtk路由器型号"
+        required: true
+        options:
+          - cmcc_rax3000m-nand
+          - sl_3000-emmc
+        default: sl_3000-emmc
+      custom_router_ip:
+        description: "请设置路由器的管理地址 格式:192.168.x.1"
+        required: true
+        default: "192.168.6.1"
+      enable_store:
+        description: "集成 store 商店"
+        required: false
+        type: boolean
+        default: true
+      include_docker:
+        description: "是否编译 Docker 插件"
+        required: true
+        default: 'no'
+        type: choice
+        options:
+          - 'yes'
+          - 'no'
+      enable_pppoe:
+        description: "是否配置PPPoE拨号信息?"
+        required: true
+        default: 'no'
+        type: choice
+        options:
+          - 'yes'
+          - 'no'
+      pppoe_account:
+        description: "宽带账号 (若启用PPPoE)"
+        required: false
+      pppoe_password:
+        description: "宽带密码 (若启用PPPoE)"
+        required: false
+
+env:
+  KWRT_VERSION: "24.10"
+  KWRT_PACKAGE_VERSION: "24.10.4"
+  IMAGE_BUILDER_DIR: ""
+  BUILD_TARGET_DIR: ""
+  PLATFORM: ""
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wget zstd tree rsync
+
+      - name: Save Custom Router IP
+        run: |
+          mkdir -p "${{ github.workspace }}/custom"
+          echo "${{ github.event.inputs.custom_router_ip }}" > "${{ github.workspace }}/custom/custom_router_ip.txt"
+          echo "✅ 路由器管理地址: ${{ github.event.inputs.custom_router_ip }}"
+
+      - name: Validate PPPoE Inputs
+        run: |
+          # 将 input 映射到 env 避免语法错误
+          if [[ "${{ inputs.enable_pppoe }}" == "yes" ]]; then
+            if [[ -z "${{ inputs.pppoe_account }}" || -z "${{ inputs.pppoe_password }}" ]]; then
+              echo "❌ Error: PPPoE account and password must be provided!"
+              exit 1
+            fi
+          fi
+
+      - name: Enable Store integration
+        run: |
+          if [ "${{ github.event.inputs.enable_store }}" == "true" ]; then
+            mkdir -p shell
+            echo 'CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-store"' >> shell/custom-packages.sh
+            echo "✅ 已追加 luci-app-store"
+          else
+            echo "❎ 未启用 luci-app-store"
+          fi
+
+      - name: Determine platform and download URL
+        id: setup
+        run: |
+          profile="${{ github.event.inputs.profile }}"
+          echo "🔧 Building for profile: $profile"
+          
+          # 默认平台 (适配 sl_3000-emmc)
+          platform="mediatek/filogic"
+          # 注意：此处使用你指定的特定 KWRT 版本链接
+          download_url="https://github.com/1303045940/Kwrt/releases/download/12%2F05_2025_11%2F07_mediatek_filogic/kwrt-imagebuilder-mediatek-filogic.Linux-x86_64.tar.zst"
+          #download_url="https://github.com/a1303045940/Kwrt/releases/download/12%2F05_2025_14%2F07_mediatek_filogic/kwrt-imagebuilder-mediatek-filogic.Linux-x86_64.tar.zst"
+          #download_url="https://github.com/a1303045940/Kwrt/releases/download/12%2F05_2025_14%2F06_mediatek_filogic/kwrt-imagebuilder-mediatek-filogic.Linux-x86_64.tar.zst"
+          # 兼容其他机型的判断逻辑 (保留不动)
+          if [ -f model/ipq807x.txt ]; then
+            ipq807x_models=$(cat model/ipq807x.txt | tr '\n' '|')
+            ipq807x_models=${ipq807x_models%|}
+            if [[ "$profile" =~ ^($ipq807x_models)$ ]]; then
+              platform="qualcommax/ipq807x"
+              download_url="https://dl.openwrt.ai/releases/${{ env.KWRT_VERSION }}/targets/qualcommax/ipq807x/kwrt-imagebuilder-qualcommax-ipq807x.Linux-x86_64.tar.zst"
+            fi
+          fi
+          
+          # 输出环境变量
+          echo "platform=$platform" >> $GITHUB_ENV
+          echo "PLATFORM=$platform" >> $GITHUB_ENV
+          echo "download_url=$download_url" >> $GITHUB_ENV
+          echo "📦 Platform: $platform"
+          echo "🔗 Download URL: $download_url"
+
+      - name: Download and extract Kwrt ImageBuilder
+        run: |
+          echo "⬇️ Downloading ImageBuilder..."
+          wget -q --show-progress ${{ env.download_url }}
+          
+          filename=$(basename ${{ env.download_url }})
+          echo "📦 Extracting $filename..."
+          
+          if [[ "$filename" =~ \.tar\.gz$ ]]; then
+            tar -xzf "$filename"
+          elif [[ "$filename" =~ \.tar\.zst$ ]]; then
+            tar --zstd -xf "$filename"
+          else
+            echo "❌ 不支持的格式"
+            exit 1
+          fi
+          
+          builder_dir=$(tar --zstd -tf $filename | head -1 | cut -f1 -d"/")
+          echo "IMAGE_BUILDER_DIR=$builder_dir" >> $GITHUB_ENV
+          echo "BUILD_TARGET_DIR=$builder_dir/bin/targets/${{ env.PLATFORM }}" >> $GITHUB_ENV
+          echo "✅ ImageBuilder 已解压到: $builder_dir"
+
+      - name: Prepare custom files
+        run: |
+          cd ${{ env.IMAGE_BUILDER_DIR }}
+          
+          echo "================================================"
+          echo "准备自定义文件和配置"
+          echo "================================================"
+          
+          # 1. 创建基础目录结构
+          mkdir -p files/etc/uci-defaults files/etc/config files/etc/opkg
+          
+          # 2. 核心功能：复制 custom-files 目录
+          #    这将把 custom-files 下的所有文件覆盖到 ImageBuilder 的 files/ 目录
+          if [ -d "${{ github.workspace }}/custom-files" ]; then
+            echo "📂 发现 custom-files 目录，开始复制..."
+            rsync -hav --exclude='.*' --exclude='*.md' \
+              ${{ github.workspace }}/custom-files/ files/
+            echo "✅ custom-files 已合并"
+          else
+            echo "⚠️ 未找到 custom-files 目录，跳过合并"
+          fi
+          
+          # 3. 动态生成 PPPoE 配置 (覆盖原有配置)
+          echo "📝 创建 PPPoE 配置文件..."
+          cat > files/etc/config/pppoe-settings << 'EOF'
+          enable_pppoe=${{ github.event.inputs.enable_pppoe }}
+          pppoe_account=${{ github.event.inputs.pppoe_account }}
+          pppoe_password=${{ github.event.inputs.pppoe_password }}
+          EOF
+          
+          # 4. 保存路由器 IP (覆盖原有配置)
+          echo "📝 保存路由器 IP 配置..."
+          echo "${{ github.event.inputs.custom_router_ip }}" > files/etc/config/custom_router_ip.txt
+          
+          # 5. 复制补充配置 (如果存在)
+          if [ -d "${{ github.workspace }}/glinet" ]; then
+             rsync -hav ${{ github.workspace }}/glinet/ files/etc/uci-defaults/
+             echo "✅ 已合并 glinet 配置"
+          fi
+          
+          if [ -f "${{ github.workspace }}/arch/arch.conf" ]; then
+             cp ${{ github.workspace }}/arch/arch.conf files/etc/opkg/arch.conf
+             echo "✅ 已复制 arch.conf"
+          fi
+          
+          # 6. 展示最终文件结构
+          echo "================================================"
+          echo "📂 最终 files 目录结构:"
+          tree files/ || find files -type f -ls
+          echo "================================================"
+
+      - name: 预置 OpenClash 内核和数据
+        run: |
+          cd ${{ env.IMAGE_BUILDER_DIR }}
+          
+          # ... (前略：这里是你原本的 mkdir, rsync, pppoe 配置等代码) ...
+
+          # =======================================================
+          # [新增] 预置 OpenClash 内核和数据 (适配 ImageBuilder)
+          # =======================================================
+          echo "🌍 开始预置 OpenClash 内核与地理数据..."
+          
+          # 1. 确定目标目录 (ImageBuilder 模式下必须放在 files/ 下)
+          OC_ROOT="files/etc/openclash"
+          OC_CORE_DIR="$OC_ROOT/core"
+          mkdir -p "$OC_CORE_DIR"
+          
+          # 2. 判断架构 (针对你的 sl_3000-emmc / filogic，固定为 arm64)
+          # 如果未来构建 x86，可以用 if [[ "${{ env.PLATFORM }}" == *"x86"* ]]; then ...
+          CORE_TYPE="arm64"
+          echo "⚙️ 识别架构为: $CORE_TYPE"
+
+          # 3. 定义下载链接
+          CORE_VER_URL="https://raw.githubusercontent.com/vernesong/OpenClash/core/dev/core_version"
+          # 获取 TUN 版本号
+          CORE_TUN_VER=$(curl -sL $CORE_VER_URL | sed -n "2{s/\r$//;p;q}")
+          
+          CORE_MATE_URL="https://github.com/vernesong/OpenClash/raw/core/dev/meta/clash-linux-$CORE_TYPE.tar.gz"
+          GEO_MMDB_URL="https://github.com/alecthw/mmdb_china_ip_list/raw/release/lite/Country.mmdb"
+          GEO_SITE_URL="https://github.com/Loyalsoldier/v2ray-rules-dat/raw/release/geosite.dat"
+          
+          # 4. 下载数据文件
+          echo "⬇️ 下载 GeoIP/GeoSite 数据..."
+          curl -sL -o "$OC_ROOT/Country.mmdb" "$GEO_MMDB_URL" && echo "✅ Country.mmdb done"
+          curl -sL -o "$OC_ROOT/GeoSite.dat" "$GEO_SITE_URL" && echo "✅ GeoSite.dat done"
+          
+          # 5. 下载并解压内核 (Meta 内核通常最常用)
+          echo "⬇️ 下载 Meta 内核..."
+          curl -sL -o "$OC_CORE_DIR/meta.tar.gz" "$CORE_MATE_URL"
+          
+          if [ -f "$OC_CORE_DIR/meta.tar.gz" ]; then
+            tar -zxf "$OC_CORE_DIR/meta.tar.gz" -C "$OC_CORE_DIR"
+            mv -f "$OC_CORE_DIR/clash" "$OC_CORE_DIR/clash_meta"
+            rm -f "$OC_CORE_DIR/meta.tar.gz"
+            chmod +x "$OC_CORE_DIR/clash_meta"
+            echo "✅ Meta 内核预置完成"
+          else
+            echo "❌ Meta 内核下载失败"
+          fi
+          
+          # (可选) 下载 Tun 内核，如果空间够大的话，取消下面注释
+          # CORE_TUN_URL="https://github.com/vernesong/OpenClash/raw/core/dev/premium/clash-linux-$CORE_TYPE-$CORE_TUN_VER.gz"
+          # curl -sL -o "$OC_CORE_DIR/tun.gz" "$CORE_TUN_URL"
+          # gzip -d "$OC_CORE_DIR/tun.gz"
+          # mv -f "$OC_CORE_DIR/tun" "$OC_CORE_DIR/clash_tun"
+          # chmod +x "$OC_CORE_DIR/clash_tun"
+          
+          echo "🎉 OpenClash 预置流程结束"
+          
+          # =======================================================
+
+          # 6. 展示最终文件结构 (这是你原有的代码)
+          echo "================================================"
+          echo "📂 最终 files 目录结构:"
+          tree files/ || find files -type f -ls
+          echo "================================================"
+
+
+
+
+
+          
+
+      - name: Configure repositories
+        run: |
+          cd ${{ env.IMAGE_BUILDER_DIR }}
+          
+          echo "🔧 配置软件源..."
+          # 修复 KWRT 特有的本地路径问题
+          sed -i 's|file://www/wwwroot/|https://|g' repositories.conf
+          sed -i 's|src |src/gz |g' repositories.conf
+          
+          # 如果用户仓库中有自定义 repositories.conf，则覆盖
+          if [ -f "${{ github.workspace }}/packages/repositories.conf" ]; then
+            cp -f ${{ github.workspace }}/packages/repositories.conf repositories.conf
+            echo "✅ 已使用自定义 repositories.conf"
+          fi
+          
+          # 添加 OpenWrt 官方源补全缺失依赖
+          echo "" >> repositories.conf
+          echo "# OpenWrt official repo for missing packages" >> repositories.conf
+          echo "src/gz openwrt_packages https://downloads.openwrt.org/releases/${{ env.KWRT_PACKAGE_VERSION }}/packages/aarch64_cortex-a53/packages" >> repositories.conf
+          echo "src/gz openwrt_luci https://downloads.openwrt.org/releases/${{ env.KWRT_PACKAGE_VERSION }}/packages/aarch64_cortex-a53/luci" >> repositories.conf
+          
+          echo "📄 最终源配置:"
+          cat repositories.conf
+
+      - name: Build firmware with Kwrt ImageBuilder
+        run: |
+          cd ${{ env.IMAGE_BUILDER_DIR }}
+          
+          echo "================================================"
+          echo "开始构建固件"
+          echo "================================================"
+          
+          # 基础包 + 动态功能包
+          PACKAGES="luci luci-ssl-openssl luci-base luci-compat"
+          
+          if [ "${{ github.event.inputs.include_docker }}" == "yes" ]; then
+            PACKAGES="$PACKAGES docker dockerd luci-app-dockerman"
+          fi
+          
+          if [ "${{ github.event.inputs.enable_store }}" == "true" ]; then
+            PACKAGES="$PACKAGES luci-app-store"
+          fi
+          
+          # 读取自定义包列表
+          if [ -f "${{ github.workspace }}/shell/custom-packages.sh" ]; then
+            source ${{ github.workspace }}/shell/custom-packages.sh
+            PACKAGES="$PACKAGES $CUSTOM_PACKAGES"
+          fi
+          
+          echo "📦 软件包列表: $PACKAGES"
+          
+          # 禁用服务
+          DISABLED_SERVICES="https-dns-proxy"
+          
+          # 构建命令
+          make image \
+            PROFILE="${{ github.event.inputs.profile }}" \
+            PACKAGES="$PACKAGES" \
+            FILES="files" \
+            DISABLED_SERVICES="$DISABLED_SERVICES" \
+            -j$(nproc)
+
+          echo "✅ 构建完成"
+          ls -lh bin/targets/${{ env.PLATFORM }}/
+
+      - name: Verify build results
+        run: |
+          cd ${{ env.BUILD_TARGET_DIR }}
+          echo "📋 生成文件列表:"
+          ls -lh
+
+      - name: Create release info
+        run: |
+          cat > release-info.md << EOF
+          ## 🎉 ImmortalWrt Kwrt 固件构建信息
+          
+          ### 基本信息
+          - **设备型号**: \`${{ github.event.inputs.profile }}\`
+          - **管理地址**: \`${{ github.event.inputs.custom_router_ip }}\`
+          - **Docker**: ${{ github.event.inputs.include_docker }}
+          - **Store**: ${{ github.event.inputs.enable_store }}
+          
+          ### 使用说明
+          固件刷入后，首次启动会自动执行 \`99-custom.sh\` 脚本（如已提供）来配置 IP 和网络。
+          默认用户名: root, 密码: password
+          EOF
+
+      # 1. 新增解压步骤
+      - name: Extract firmware zip
+        run: |
+          cd ${{ env.BUILD_TARGET_DIR }}
+          echo "📂 解压前文件列表:"
+          ls -lh
+          
+          echo "🔓 正在解压 ZIP 文件..."
+          # 查找并解压所有 zip 文件，-o 表示覆盖不询问
+          for file in *.zip; do
+            if [ -f "$file" ]; then
+              echo "Unzipping $file..."
+              unzip -o "$file"
+            fi
+          done
+          
+          echo "🗑️ 删除原始 zip 文件 (可选)..."
+          rm -f *.zip
+          
+          echo "✅ 解压后文件列表 (准备上传):"
+          ls -lh *.bin || echo "❌ 未找到 bin 文件"
+
+      - name: Upload firmware to Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.profile }}-${{ github.run_number }}
+          name: "Kwrt-${{ github.event.inputs.profile }}-$(date +'%Y%m%d')"
+          body_path: release-info.md
+          files: |
+            ${{ env.BUILD_TARGET_DIR }}/*.bin
+            ${{ env.BUILD_TARGET_DIR }}/*.tar.zst
+            ${{ env.BUILD_TARGET_DIR }}/sha256sums
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Upload firmware as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Kwrt-${{ github.event.inputs.profile }}-${{ github.run_number }}
+          path: ${{ env.BUILD_TARGET_DIR }}
+          retention-days: 7
