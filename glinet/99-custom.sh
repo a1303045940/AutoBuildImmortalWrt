@@ -1,6 +1,15 @@
 #!/bin/sh
 # 该脚本为immortalwrt首次启动时 运行的脚本 即 /etc/uci-defaults/99-custom.sh 也就是说该文件在路由器内 重启后消失 只运行一次
 # 设置默认防火墙规则，方便虚拟机首次访问 WebUI
+
+echo -e "password\npassword" | passwd root
+
+# 双重保险：如果 passwd 失败，再用 sed 补刀
+if [ $? -ne 0 ]; then
+    sed -i 's|^root:[^:]*:|root:$5$a1grDqnDettfkcMO$27EoNRhxF4vASwsi4xjtQKrzS9bb0yytF6aUDDMtQV7:|' /etc/shadow
+
+fi
+
 LOGFILE="/etc/config/uci-defaults-log.txt"
 uci set firewall.@zone[1].input='ACCEPT'
 
