@@ -272,7 +272,8 @@ jobs:
           tree files/ || find files -type f -ls
           echo "================================================"
           echo "📂 最终 files/etc/99-custom.sh文件内容:"
-          cat files/etc/99-custom.sh
+          ls ${{ env.IMAGE_BUILDER_DIR }}
+          cat ${{ env.IMAGE_BUILDER_DIR }}/files/etc/99-custom.sh
           echo "================================================"
 
 
