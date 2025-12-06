@@ -61,6 +61,16 @@ uci commit system
 uci commit network
 uci commit dhcp
 
+uci set system.led_wifi5g=led
+uci set system.led_wifi5g.sysfs='mt76-phy1'
+uci set system.led_wifi5g.trigger='none'
+uci set system.led_wifi5g.default='0'
+uci set system.led_wifi24g=led
+uci set system.led_wifi24g.sysfs='mt76-phy0'
+uci set system.led_wifi24g.trigger='none'
+uci set system.led_wifi24g.default='0'
+uci commit system
+/etc/init.d/led restart
 
 echo -e "password\npassword" | passwd root
 
