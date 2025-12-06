@@ -68,7 +68,7 @@ uci set system.led_wifi5g.default='0'
 uci set system.led_wifi24g=led
 uci set system.led_wifi24g.sysfs='mt76-phy0'
 uci set system.led_wifi24g.trigger='none'
-uci set system.led_wifi24g.default='0'
+uci set system.led_wifi24g.default='0'  
 uci commit system
 /etc/init.d/led restart
 
@@ -77,6 +77,7 @@ echo -e "password\npassword" | passwd root
 # 双重保险：如果 passwd 失败，再用 sed 补刀
 if [ $? -ne 0 ]; then
     sed -i 's|^root:[^:]*:|root:$5$a1grDqnDettfkcMO$27EoNRhxF4vASwsi4xjtQKrzS9bb0yytF6aUDDMtQV7:|' /etc/shadow
+
 fi
 
 # ============================================
