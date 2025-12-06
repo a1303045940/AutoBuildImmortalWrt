@@ -364,8 +364,8 @@ jobs:
           - **Store**: ${{ github.event.inputs.enable_store }}
           
           ### 使用说明
-          固件刷入后，首次启动会自动执行 \`99-custom.sh\` 脚本（如已提供）来配置 IP 和网络。
-          默认用户名: root, 密码: password
+          BT-R320固件。
+          默认用户名: root, 密码: root
           EOF
 
       # 1. 新增解压步骤
