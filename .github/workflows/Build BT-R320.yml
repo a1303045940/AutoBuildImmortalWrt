@@ -271,6 +271,9 @@ jobs:
           echo "📂 最终 files 目录结构:"
           tree files/ || find files -type f -ls
           echo "================================================"
+          echo "📂 最终 files/etc/99-custom.sh文件内容:"
+          cat files/etc/99-custom.sh
+          echo "================================================"
 
 
 
