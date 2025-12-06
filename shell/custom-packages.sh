@@ -40,7 +40,7 @@ CUSTOM_PACKAGES="$CUSTOM_PACKAGES tailscale"
 #CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-theme-kucat"
 # 进阶设置 by sirpdboy 
 # 当luci-app-advancedplus插件开启时 需排除冲突项 luci-app-argon-config和luci-i18n-argon-config-zh-cn 减号代表排除
-CUSTOM_PACKAGES="$CUSTOM_PACKAGES -luci-app-fan -luci-app-log-viewer -luci-app-wizard -luci-app-filemanager"
+CUSTOM_PACKAGES="$CUSTOM_PACKAGES -luci-app-fan -luci-app-log-viewer -luci-app-wizard -luci-app-filemanager -luci-app-advancedplus"
 #CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-argon-config luci-i18n-argon-config-zh-cn -luci-app-filemanager"
 
 #CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-advancedplus l18n-advancedplus-zh-cn -luci-app-argon-config -luci-i18n-argon-config-zh-cn"
