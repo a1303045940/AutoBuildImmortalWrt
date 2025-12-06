@@ -87,6 +87,7 @@ jobs:
             mkdir -p shell
             echo 'CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-store"' >> shell/custom-packages.sh
 
+            echo 'CUSTOM_PACKAGES="$CUSTOM_PACKAGES -luci-app-passwall2"' >> shell/custom-packages.sh
             echo 'CUSTOM_PACKAGES="$CUSTOM_PACKAGES -luci-app-qos"' >> shell/custom-packages.sh
             echo 'CUSTOM_PACKAGES="$CUSTOM_PACKAGES -luci-app-statistics"' >> shell/custom-packages.sh
             echo 'CUSTOM_PACKAGES="$CUSTOM_PACKAGES -luci-app-homeproxy"' >> shell/custom-packages.sh
