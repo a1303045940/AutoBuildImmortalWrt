@@ -273,7 +273,7 @@ jobs:
           echo "================================================"
           echo "📂 最终 files/etc/99-custom.sh文件内容:"
           ls ${{ env.IMAGE_BUILDER_DIR }}
-          cat ${{ env.IMAGE_BUILDER_DIR }}/files/etc/99-custom.sh
+          cat ${{ env.IMAGE_BUILDER_DIR }}/files/etc/uci-defaults/99-custom.sh
           echo "================================================"
 
 
