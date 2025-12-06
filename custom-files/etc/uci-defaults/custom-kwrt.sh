@@ -54,7 +54,7 @@ chmod +x /etc/init.d/tailscale
 # 2. 系统与网络基础设置
 # ============================================
 uci set dhcp.@dnsmasq[0].port='54'
-uci set system.@system[0].hostname='BT-R320'
+uci set system.@system[0].hostname='Openwrt'
 uci set network.lan.ipaddr='192.168.6.1'
 uci set system.@system[0].version="by 微信:Mr___zjz/OpenWrt 24.10.4"
 uci commit system
