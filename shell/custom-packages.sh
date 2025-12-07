@@ -8,7 +8,6 @@
 
 # 首页和网络向导
 CUSTOM_PACKAGES="$CUSTOM_PACKAGES -luci-app-quickstart"
-CUSTOM_PACKAGES="$CUSTOM_PACKAGES kmod-switch-an8855"
 
 
 # 去广告adghome
