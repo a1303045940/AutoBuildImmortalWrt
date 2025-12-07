@@ -484,7 +484,7 @@ on:
           - netgear_r8000
           - smartrg_sr400ac
           - tenda_ac9
-        default: cmcc_rax3000me
+        default: xiaomi_mi-router-ax3000t-ubootmod
       custom_router_ip:
         description: "请设置路由器的管理地址 格式:192.168.x.1 或 10.x.x.1"
         required: true
