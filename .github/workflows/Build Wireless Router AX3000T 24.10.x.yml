@@ -557,22 +557,6 @@ jobs:
             echo "❎ 未启用 luci-app-store"
           fi
 
-      - name: Configure repositories
-        run: |
-          # 创建一个临时的配置目录
-          mkdir -p ${{ github.workspace }}/config_overlay
-          
-          # 创建自定义的 repositories.conf
-          echo "src/gz immortalwrt_core https://downloads.immortalwrt.org/releases/24.10.0/targets/mediatek/filogic/packages" > ${{ github.workspace }}/config_overlay/repositories.conf
-          echo "src/gz immortalwrt_base https://downloads.immortalwrt.org/releases/24.10.0/packages/aarch64_cortex-a53/base" >> ${{ github.workspace }}/config_overlay/repositories.conf
-          echo "src/gz immortalwrt_luci https://downloads.immortalwrt.org/releases/24.10.0/packages/aarch64_cortex-a53/luci" >> ${{ github.workspace }}/config_overlay/repositories.conf
-          echo "src/gz immortalwrt_packages https://downloads.immortalwrt.org/releases/24.10.0/packages/aarch64_cortex-a53/packages" >> ${{ github.workspace }}/config_overlay/repositories.conf
-          echo "src/gz immortalwrt_routing https://downloads.immortalwrt.org/releases/24.10.0/packages/aarch64_cortex-a53/routing" >> ${{ github.workspace }}/config_overlay/repositories.conf
-          echo "src/gz immortalwrt_telephony https://downloads.immortalwrt.org/releases/24.10.0/packages/aarch64_cortex-a53/telephony" >> ${{ github.workspace }}/config_overlay/repositories.conf
-          echo "src/gz custom_third_party https://op.dllkids.xyz/packages/aarch64_cortex-a53/" >> ${{ github.workspace }}/config_overlay/repositories.conf
-          
-          cat ${{ github.workspace }}/config_overlay/repositories.conf
-
 
           
       - name: Build Wireless ImmortalWrt 24.10.4
@@ -659,7 +643,6 @@ jobs:
               -v "${{ github.workspace }}/arch/arch.conf:/home/build/immortalwrt/files/etc/opkg/arch.conf" \
               -v "${{ github.workspace }}/shell:/home/build/immortalwrt/shell" \
               -v "${{ github.workspace }}/mediatek-filogic/build24.sh:/home/build/immortalwrt/build.sh" \
-              -v "${{ github.workspace }}/config_overlay/repositories.conf:/home/build/immortalwrt/repositories.conf" \
               -e PROFILE=$profile \
               -e INCLUDE_DOCKER=$include_docker \
               -e ENABLE_PPPOE=${{ inputs.enable_pppoe }} \
