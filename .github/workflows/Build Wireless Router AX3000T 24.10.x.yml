@@ -659,7 +659,6 @@ jobs:
               -v "${{ github.workspace }}/arch/arch.conf:/home/build/immortalwrt/files/etc/opkg/arch.conf" \
               -v "${{ github.workspace }}/shell:/home/build/immortalwrt/shell" \
               -v "${{ github.workspace }}/mediatek-filogic/build24.sh:/home/build/immortalwrt/build.sh" \
-              # 【新增】挂载自定义的 repositories.conf 到容器内
               -v "${{ github.workspace }}/config_overlay/repositories.conf:/home/build/immortalwrt/repositories.conf" \
               -e PROFILE=$profile \
               -e INCLUDE_DOCKER=$include_docker \
