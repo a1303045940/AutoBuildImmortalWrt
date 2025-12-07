@@ -559,27 +559,23 @@ jobs:
 
       - name: Configure repositories
         run: |
-          cd ${{ env.IMAGE_BUILDER_DIR }}
+          # 创建一个临时的配置目录
+          mkdir -p ${{ github.workspace }}/config_overlay
           
-          echo "🔧 配置软件源..."
-          # 修复 KWRT 特有的本地路径问题
-          sed -i 's|file://www/wwwroot/|https://|g' repositories.conf
-          sed -i 's|src |src/gz |g' repositories.conf
+          # 创建自定义的 repositories.conf
+          echo "src/gz immortalwrt_core https://downloads.immortalwrt.org/releases/24.10.0/targets/mediatek/filogic/packages" > ${{ github.workspace }}/config_overlay/repositories.conf
+          echo "src/gz immortalwrt_base https://downloads.immortalwrt.org/releases/24.10.0/packages/aarch64_cortex-a53/base" >> ${{ github.workspace }}/config_overlay/repositories.conf
+          echo "src/gz immortalwrt_luci https://downloads.immortalwrt.org/releases/24.10.0/packages/aarch64_cortex-a53/luci" >> ${{ github.workspace }}/config_overlay/repositories.conf
+          echo "src/gz immortalwrt_packages https://downloads.immortalwrt.org/releases/24.10.0/packages/aarch64_cortex-a53/packages" >> ${{ github.workspace }}/config_overlay/repositories.conf
+          echo "src/gz immortalwrt_routing https://downloads.immortalwrt.org/releases/24.10.0/packages/aarch64_cortex-a53/routing" >> ${{ github.workspace }}/config_overlay/repositories.conf
+          echo "src/gz immortalwrt_telephony https://downloads.immortalwrt.org/releases/24.10.0/packages/aarch64_cortex-a53/telephony" >> ${{ github.workspace }}/config_overlay/repositories.conf
           
-          # 如果用户仓库中有自定义 repositories.conf，则覆盖
-          if [ -f "${{ github.workspace }}/packages/repositories.conf" ]; then
-            cp -f ${{ github.workspace }}/packages/repositories.conf repositories.conf
-            echo "✅ 已使用自定义 repositories.conf"
-          fi
+          # 【关键】添加包含 npc 的第三方源 (请替换为真实有效的 URL)
+          # 注意：请确保这个源里有 luci-app-npc 且架构是 aarch64_cortex-a53
+          echo "src/gz custom_third_party https://op.dllkids.xyz/packages/aarch64_cortex-a53/" >> ${{ github.workspace }}/config_overlay/repositories.conf
           
-          # 添加 OpenWrt 官方源补全缺失依赖
-          echo "" >> repositories.conf
-          echo "# OpenWrt official repo for missing packages" >> repositories.conf
-          echo "src/gz openwrt_packages https://downloads.openwrt.org/releases/${{ env.KWRT_PACKAGE_VERSION }}/packages/aarch64_cortex-a53/packages" >> repositories.conf
-          echo "src/gz openwrt_luci https://downloads.openwrt.org/releases/${{ env.KWRT_PACKAGE_VERSION }}/packages/aarch64_cortex-a53/luci" >> repositories.conf
-          
-          echo "📄 最终源配置:"
-          cat repositories.conf
+          cat ${{ github.workspace }}/config_overlay/repositories.conf
+
 
           
       - name: Build Wireless ImmortalWrt 24.10.4
@@ -666,6 +662,8 @@ jobs:
               -v "${{ github.workspace }}/arch/arch.conf:/home/build/immortalwrt/files/etc/opkg/arch.conf" \
               -v "${{ github.workspace }}/shell:/home/build/immortalwrt/shell" \
               -v "${{ github.workspace }}/mediatek-filogic/build24.sh:/home/build/immortalwrt/build.sh" \
+              # 【新增】挂载自定义的 repositories.conf 到容器内
+              -v "${{ github.workspace }}/config_overlay/repositories.conf:/home/build/immortalwrt/repositories.conf" \
               -e PROFILE=$profile \
               -e INCLUDE_DOCKER=$include_docker \
               -e ENABLE_PPPOE=${{ inputs.enable_pppoe }} \
