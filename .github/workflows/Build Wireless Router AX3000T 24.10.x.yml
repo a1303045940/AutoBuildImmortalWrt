@@ -569,9 +569,6 @@ jobs:
           echo "src/gz immortalwrt_packages https://downloads.immortalwrt.org/releases/24.10.0/packages/aarch64_cortex-a53/packages" >> ${{ github.workspace }}/config_overlay/repositories.conf
           echo "src/gz immortalwrt_routing https://downloads.immortalwrt.org/releases/24.10.0/packages/aarch64_cortex-a53/routing" >> ${{ github.workspace }}/config_overlay/repositories.conf
           echo "src/gz immortalwrt_telephony https://downloads.immortalwrt.org/releases/24.10.0/packages/aarch64_cortex-a53/telephony" >> ${{ github.workspace }}/config_overlay/repositories.conf
-          
-          # 【关键】添加包含 npc 的第三方源 (请替换为真实有效的 URL)
-          # 注意：请确保这个源里有 luci-app-npc 且架构是 aarch64_cortex-a53
           echo "src/gz custom_third_party https://op.dllkids.xyz/packages/aarch64_cortex-a53/" >> ${{ github.workspace }}/config_overlay/repositories.conf
           
           cat ${{ github.workspace }}/config_overlay/repositories.conf
