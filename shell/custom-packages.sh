@@ -24,7 +24,7 @@ CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-passwall2"
 
 CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-openclash"
 #穿透软件
-CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-npc"
+CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-nps"
 CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-zerotier"
 
 #不要的插件
