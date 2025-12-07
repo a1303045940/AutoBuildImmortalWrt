@@ -557,7 +557,31 @@ jobs:
             echo "❎ 未启用 luci-app-store"
           fi
 
+      - name: Configure repositories
+        run: |
+          cd ${{ env.IMAGE_BUILDER_DIR }}
+          
+          echo "🔧 配置软件源..."
+          # 修复 KWRT 特有的本地路径问题
+          sed -i 's|file://www/wwwroot/|https://|g' repositories.conf
+          sed -i 's|src |src/gz |g' repositories.conf
+          
+          # 如果用户仓库中有自定义 repositories.conf，则覆盖
+          if [ -f "${{ github.workspace }}/packages/repositories.conf" ]; then
+            cp -f ${{ github.workspace }}/packages/repositories.conf repositories.conf
+            echo "✅ 已使用自定义 repositories.conf"
+          fi
+          
+          # 添加 OpenWrt 官方源补全缺失依赖
+          echo "" >> repositories.conf
+          echo "# OpenWrt official repo for missing packages" >> repositories.conf
+          echo "src/gz openwrt_packages https://downloads.openwrt.org/releases/${{ env.KWRT_PACKAGE_VERSION }}/packages/aarch64_cortex-a53/packages" >> repositories.conf
+          echo "src/gz openwrt_luci https://downloads.openwrt.org/releases/${{ env.KWRT_PACKAGE_VERSION }}/packages/aarch64_cortex-a53/luci" >> repositories.conf
+          
+          echo "📄 最终源配置:"
+          cat repositories.conf
 
+          
       - name: Build Wireless ImmortalWrt 24.10.4
         run: |
           profile="${{ github.event.inputs.profile }}"
