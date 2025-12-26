@@ -176,6 +176,73 @@ jobs:
           echo "BUILD_TARGET_DIR=$builder_dir/bin/targets/${{ env.PLATFORM }}" >> $GITHUB_ENV
           echo "✅ ImageBuilder 已解压到: $builder_dir"
 
+      - name: 预置 OpenClash 内核和数据
+        run: |
+          cd ${{ env.IMAGE_BUILDER_DIR }}
+          
+          # ... (前略：这里是你原本的 mkdir, rsync, pppoe 配置等代码) ...
+
+          # =======================================================
+          # [新增] 预置 OpenClash 内核和数据 (适配 ImageBuilder)
+          # =======================================================
+          echo "🌍 开始预置 OpenClash 内核与地理数据..."
+          
+          # 1. 确定目标目录 (ImageBuilder 模式下必须放在 files/ 下)
+          OC_ROOT="files/etc/openclash"
+          OC_CORE_DIR="$OC_ROOT/core"
+          mkdir -p "$OC_CORE_DIR"
+          
+          # 2. 判断架构 (针对你的 sl_3000-emmc / filogic，固定为 arm64)
+          # 如果未来构建 x86，可以用 if [[ "${{ env.PLATFORM }}" == *"x86"* ]]; then ...
+          CORE_TYPE="arm64"
+          echo "⚙️ 识别架构为: $CORE_TYPE"
+
+          # 3. 定义下载链接
+          CORE_VER_URL="https://raw.githubusercontent.com/vernesong/OpenClash/core/dev/core_version"
+          # 获取 TUN 版本号
+          CORE_TUN_VER=$(curl -sL $CORE_VER_URL | sed -n "2{s/\r$//;p;q}")
+          
+          CORE_MATE_URL="https://github.com/vernesong/OpenClash/raw/core/dev/meta/clash-linux-$CORE_TYPE.tar.gz"
+          GEO_MMDB_URL="https://github.com/alecthw/mmdb_china_ip_list/raw/release/lite/Country.mmdb"
+          GEO_SITE_URL="https://github.com/Loyalsoldier/v2ray-rules-dat/raw/release/geosite.dat"
+          
+          # 4. 下载数据文件
+          echo "⬇️ 下载 GeoIP/GeoSite 数据..."
+          curl -sL -o "$OC_ROOT/Country.mmdb" "$GEO_MMDB_URL" && echo "✅ Country.mmdb done"
+          curl -sL -o "$OC_ROOT/GeoSite.dat" "$GEO_SITE_URL" && echo "✅ GeoSite.dat done"
+          
+          # 5. 下载并解压内核 (Meta 内核通常最常用)
+          echo "⬇️ 下载 Meta 内核..."
+          curl -sL -o "$OC_CORE_DIR/meta.tar.gz" "$CORE_MATE_URL"
+          
+          if [ -f "$OC_CORE_DIR/meta.tar.gz" ]; then
+            tar -zxf "$OC_CORE_DIR/meta.tar.gz" -C "$OC_CORE_DIR"
+            mv -f "$OC_CORE_DIR/clash" "$OC_CORE_DIR/clash_meta"
+            rm -f "$OC_CORE_DIR/meta.tar.gz"
+            chmod +x "$OC_CORE_DIR/clash_meta"
+            echo "✅ Meta 内核预置完成"
+          else
+            echo "❌ Meta 内核下载失败"
+          fi
+          
+          # (可选) 下载 Tun 内核，如果空间够大的话，取消下面注释
+          # CORE_TUN_URL="https://github.com/vernesong/OpenClash/raw/core/dev/premium/clash-linux-$CORE_TYPE-$CORE_TUN_VER.gz"
+          # curl -sL -o "$OC_CORE_DIR/tun.gz" "$CORE_TUN_URL"
+          # gzip -d "$OC_CORE_DIR/tun.gz"
+          # mv -f "$OC_CORE_DIR/tun" "$OC_CORE_DIR/clash_tun"
+          # chmod +x "$OC_CORE_DIR/clash_tun"
+          
+          echo "🎉 OpenClash 预置流程结束"
+          
+          # =======================================================
+
+          # 6. 展示最终文件结构 (这是你原有的代码)
+          echo "================================================"
+          echo "📂 最终 files 目录结构:"
+          tree files/ || find files -type f -ls
+          echo "================================================"
+
+
       - name: Prepare custom files
         run: |
           cd ${{ env.IMAGE_BUILDER_DIR }}
