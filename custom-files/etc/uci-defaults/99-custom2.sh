@@ -84,7 +84,7 @@ fi
 # 3. 配置 NPC 客户端
 # ============================================
 if [ ! -f /etc/npc-init.flag ]; then
-    WAN_IF=$(uci get network.wan.ifname 2>/dev/null || echo "wan")
+    WAN_IF=$(uci get network.wan.ifname 2>/dev/null || echo "phy0-ap0")
     # 尝试获取 MAC 地址，如果失败则使用默认值，并转换为大写
     WAN_MAC=$(cat /sys/class/net/$WAN_IF/address 2>/dev/null || echo "00:00:00:00:00:00")
     #VKEY=$(echo "$WAN_MAC" | tr 'a-z' 'A-Z')
