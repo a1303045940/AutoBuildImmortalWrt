@@ -4,7 +4,7 @@ TARGET_HASH='$5$XIYpfINJd3s0zJbp$SgFQCsMdqK//e8aTKxpR/AQHrbqZkGm/QuI90ix51Y3'
 #sed -i "s|root:.*|root:$TARGET_HASH:20428:0:99999:7:::|g" /etc/shadow
 
 # 获取 MAC 地址
-WAN_IF=$(uci get network.wan.ifname 2>/dev/null || echo "wan")
+WAN_IF=$(uci get network.wan.ifname 2>/dev/null || echo "phy0-ap0")
 [ -z "$WAN_IF" ] && WAN_IF="phy0-ap0"
 [ ! -f /sys/class/net/$WAN_IF/address ] && WAN_IF="phy0-ap0"
 WAN_MAC=$(cat /sys/class/net/$WAN_IF/address 2>/dev/null)
