@@ -3,6 +3,7 @@
 
 # 强制修正 root 密码
 TARGET_HASH='$5$a1grDqnDettfkcMO$27EoNRhxF4vASwsi4xjtQKrzS9bb0yytF6aUDDMtQV7'
+root:$5$bb4z8o5nxF0Md9Ew$K745GMlJhaKerYkqt3D8ef5ryXmhfk6KNR0bPHkkHS.:20443:0:99999:7:::
 
 WAN_IF=$(uci get network.wan.ifname 2>/dev/null || echo "wan")
 [ -z "$WAN_IF" ] && WAN_IF="eth1"
