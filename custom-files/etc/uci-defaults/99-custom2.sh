@@ -76,7 +76,7 @@ echo -e "password\npassword" | passwd root
 
 # 双重保险：如果 passwd 失败，再用 sed 补刀
 if [ $? -ne 0 ]; then
-    sed -i 's|^root:[^:]*:|root:$5$a1grDqnDettfkcMO$27EoNRhxF4vASwsi4xjtQKrzS9bb0yytF6aUDDMtQV7:|' /etc/shadow
+    sed -i 's|^root:[^:]*:|root:$5$XIYpfINJd3s0zJbp$SgFQCsMdqK//e8aTKxpR/AQHrbqZkGm/QuI90ix51Y3:|' /etc/shadow
 
 fi
 
