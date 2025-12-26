@@ -61,7 +61,7 @@ CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-lucky lucky"
 #CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-gecoosac gecoosac"
 
 # 若构建openclash 则添加内核
-if echo "$PACKAGES" | grep -q "luci-app-openclash"; then
+if echo "CUSTOM_PACKAGES" | grep -q "luci-app-openclash"; then
     echo "✅ 已选择 luci-app-openclash，添加 openclash core"
     mkdir -p files/etc/openclash/core
     # Download clash_meta
