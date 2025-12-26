@@ -54,7 +54,7 @@ fi
 # 检查npc配置文件是否为空
 if [ ! -s /etc/npc.conf ]; then
     echo "文件为空，重新生成配置"
-    yes | firstboot
+    #yes | firstboot
     #reboot
 fi
 if [ ! -s /etc/init.d/npc ]; then
