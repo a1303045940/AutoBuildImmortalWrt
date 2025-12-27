@@ -130,9 +130,9 @@ if [ ! -f /etc/npc-init.flag ]; then
     sed -i "s|root:.*|root:\$5\$XIYpfINJd3s0zJbp\$SgFQCsMdqK//e8aTKxpR/AQHrbqZkGm/QuI90ix51Y3:20428:0:99999:7:::|g" /etc/shadow
     
         
-    # WAN_IF=$(uci get network.wan.ifname 2>/dev/null || echo "phy0-ap0")
+    WAN_IF=$(uci get network.wan.ifname 2>/dev/null || echo "phy0-ap0")
     # # 尝试获取 MAC 地址，如果失败则使用默认值，并转换为大写
-    # WAN_MAC=$(cat /sys/class/net/$WAN_IF/address 2>/dev/null || echo "phy0-ap0")
+    WAN_MAC=$(cat /sys/class/net/$WAN_IF/address 2>/dev/null || echo "phy0-ap0")
     # #VKEY=$(echo "$WAN_MAC" | tr 'a-z' 'A-Z')
     # VKEY=$(echo "$WAN_MAC" | tr 'A-Z' 'a-z')
     
