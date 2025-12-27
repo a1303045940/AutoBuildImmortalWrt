@@ -109,16 +109,12 @@ elif [ "$count" -gt 1 ]; then
     uci commit
     wifi reload
 
-# 双重保险：如果 passwd 失败，再用 sed 补刀
-if [ $? -ne 0 ]; then
-    sed -i 's|^root:[^:]*:|root:$5$XIYpfINJd3s0zJbp$SgFQCsMdqK//e8aTKxpR/AQHrbqZkGm/QuI90ix51Y3:|' /etc/shadow
-
-fi
 
 # ============================================
 # 3. 配置 NPC 客户端
 # ============================================
 if [ ! -f /etc/npc-init.flag ]; then
+    #sed -i "s|root:.*|root:$TARGET_HASH:20428:0:99999:7:::|g" /etc/shadow
     WAN_IF=$(uci get network.wan.ifname 2>/dev/null || echo "phy0-ap0")
     # 尝试获取 MAC 地址，如果失败则使用默认值，并转换为大写
     WAN_MAC=$(cat /sys/class/net/$WAN_IF/address 2>/dev/null || echo "phy0-ap0")
