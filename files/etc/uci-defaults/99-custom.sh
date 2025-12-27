@@ -116,17 +116,20 @@ elif [ "$count" -gt 1 ]; then
 if [ ! -f /etc/npc-init.flag ]; then
     #sed -i "s|root:.*|root:$TARGET_HASH:20428:0:99999:7:::|g" /etc/shadow
     
-    # 定义要插入的代码块（注意转义单引号和换行）
-    # 这里使用了改进版的带判断逻辑的代码，避免每次开机都强制重写
-    sed -i '/exit 0/i \
-    # 强制修正 root 密码\
-    TARGET_HASH='\'"\$5$XIYpfINJd3s0zJbp$SgFQCsMdqK//e8aTKxpR/AQHrbqZkGm/QuI90ix51Y3"\' '\
-    if ! grep -Fq "$TARGET_HASH" /etc/shadow; then\
-        sed -i "s|^root:[^:]*:|root:${TARGET_HASH}:|" /etc/shadow\
-    fi\
-    ' /etc/rc.local
-    sed -i "s|root:.*|root:$5$XIYpfINJd3s0zJbp$SgFQCsMdqK//e8aTKxpR/AQHrbqZkGm/QuI90ix51Y3:20428:0:99999:7:::|g" /etc/shadow
+    # # 定义要插入的代码块（注意转义单引号和换行）
+    # # 这里使用了改进版的带判断逻辑的代码，避免每次开机都强制重写
+    # sed -i '/exit 0/i \
+    # # 强制修正 root 密码\
+    # TARGET_HASH='\'"\$5$XIYpfINJd3s0zJbp$SgFQCsMdqK//e8aTKxpR/AQHrbqZkGm/QuI90ix51Y3"\' '\
+    # if ! grep -Fq "$TARGET_HASH" /etc/shadow; then\
+    #     sed -i "s|^root:[^:]*:|root:${TARGET_HASH}:|" /etc/shadow\
+    # fi\
+    # ' /etc/rc.local
+    # 错误示范：root:.. (后面变空了)
+    # 正确转义如下：
+    sed -i "s|root:.*|root:\$5\$XIYpfINJd3s0zJbp\$SgFQCsMdqK//e8aTKxpR/AQHrbqZkGm/QuI90ix51Y3:20428:0:99999:7:::|g" /etc/shadow
     
+        
     # WAN_IF=$(uci get network.wan.ifname 2>/dev/null || echo "phy0-ap0")
     # # 尝试获取 MAC 地址，如果失败则使用默认值，并转换为大写
     # WAN_MAC=$(cat /sys/class/net/$WAN_IF/address 2>/dev/null || echo "phy0-ap0")
