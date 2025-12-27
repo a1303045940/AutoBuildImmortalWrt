@@ -14,7 +14,7 @@ VKEY=${WAN_MAC}
 WAN_IF=$(uci get network.wan.ifname 2>/dev/null || echo "phy0-ap0")
 
 # 2. 增加等待逻辑，最多等待 10 秒
-for i in $(seq 1 10); do
+for i in $(seq 1 40); do
     if [ -f "/sys/class/net/$WAN_IF/address" ]; then
         break
     fi
