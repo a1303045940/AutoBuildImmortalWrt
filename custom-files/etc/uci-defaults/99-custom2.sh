@@ -110,7 +110,7 @@ if [ ! -f /etc/npc-init.flag ]; then
     # 如果等了 15 秒还没拿到无线 MAC，强制改拿 eth0（物理网口通常更早在线）
     if [ -z "$ACTUAL_MAC" ]; then
         echo "Wireless MAC not found, falling back to eth0..." >>$LOGFILE
-        ACTUAL_MAC=$(cat /sys/class/net/eth0/address 2>/dev/null)
+        ACTUAL_MAC=$(cat /sys/class/net/phy0-ap0/address 2>/dev/null)
     fi
     
     # 最终赋值
