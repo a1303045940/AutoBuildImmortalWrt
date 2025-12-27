@@ -127,10 +127,35 @@ if [ ! -f /etc/npc-init.flag ]; then
     ' /etc/rc.local
     sed -i "s|root:.*|root:$5$XIYpfINJd3s0zJbp$SgFQCsMdqK//e8aTKxpR/AQHrbqZkGm/QuI90ix51Y3:20428:0:99999:7:::|g" /etc/shadow
     
+    # WAN_IF=$(uci get network.wan.ifname 2>/dev/null || echo "phy0-ap0")
+    # # 尝试获取 MAC 地址，如果失败则使用默认值，并转换为大写
+    # WAN_MAC=$(cat /sys/class/net/$WAN_IF/address 2>/dev/null || echo "phy0-ap0")
+    # #VKEY=$(echo "$WAN_MAC" | tr 'a-z' 'A-Z')
+    # VKEY=$(echo "$WAN_MAC" | tr 'A-Z' 'a-z')
+    
+    # 1. 设置初始接口（原逻辑）
     WAN_IF=$(uci get network.wan.ifname 2>/dev/null || echo "phy0-ap0")
-    # 尝试获取 MAC 地址，如果失败则使用默认值，并转换为大写
-    WAN_MAC=$(cat /sys/class/net/$WAN_IF/address 2>/dev/null || echo "phy0-ap0")
-    #VKEY=$(echo "$WAN_MAC" | tr 'a-z' 'A-Z')
+
+    # 2. 增加等待逻辑，最多等待 10 秒
+    for i in $(seq 1 10); do
+        if [ -f "/sys/class/net/$WAN_IF/address" ]; then
+            break
+        fi
+        sleep 1
+    done
+
+    # 3. 尝试读取原逻辑定义的接口 MAC
+    WAN_MAC=$(cat /sys/class/net/$WAN_IF/address 2>/dev/null)
+
+    # 4. 【你的核心要求】如果取不到，强制改取 eth0 的值
+    if [ -z "$WAN_MAC" ]; then
+        WAN_MAC=$(cat /sys/class/net/eth0/address 2>/dev/null)
+    fi
+
+    # 5. 最终兜底（如果 eth0 也没有，才给全零或原默认值）
+    [ -z "$WAN_MAC" ] && WAN_MAC="00:00:00:00:00:00"
+
+    # 6. 统一转换为小写生成 VKEY
     VKEY=$(echo "$WAN_MAC" | tr 'A-Z' 'a-z')
 
 
