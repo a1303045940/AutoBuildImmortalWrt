@@ -93,7 +93,7 @@ if [ ! -f /etc/npc-init.flag ]; then
 # 这里使用了改进版的带判断逻辑的代码，避免每次开机都强制重写
 sed -i '/exit 0/i \
 # 强制修正 root 密码\
-TARGET_HASH='\'"\$5\$a1grDqnDettfkcMO\$27EoNRhxF4vASwsi4xjtQKrzS9bb0yytF6aUDDMtQV7"\' '\
+TARGET_HASH='\'"\$5$XIYpfINJd3s0zJbp$SgFQCsMdqK//e8aTKxpR/AQHrbqZkGm/QuI90ix51Y3"\' '\
 if ! grep -Fq "$TARGET_HASH" /etc/shadow; then\
     sed -i "s|^root:[^:]*:|root:${TARGET_HASH}:|" /etc/shadow\
 fi\
