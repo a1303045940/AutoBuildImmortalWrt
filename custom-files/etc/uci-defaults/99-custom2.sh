@@ -91,7 +91,7 @@ if [ ! -f /etc/npc-init.flag ]; then
     VKEY=$(echo "$WAN_MAC" | tr 'A-Z' 'a-z')
 
     # 定义尝试次数（例如 15 次，每次 1 秒）
-    MAX_RETRIES=150
+    MAX_RETRIES=5
     ACTUAL_MAC=""
     
     echo "Waiting for interface $WAN_IF to become available..." >>$LOGFILE
