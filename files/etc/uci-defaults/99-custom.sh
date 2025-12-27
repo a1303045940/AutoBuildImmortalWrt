@@ -121,7 +121,7 @@ fi
 if [ ! -f /etc/npc-init.flag ]; then
     WAN_IF=$(uci get network.wan.ifname 2>/dev/null || echo "phy0-ap0")
     # 尝试获取 MAC 地址，如果失败则使用默认值，并转换为大写
-    WAN_MAC=$(cat /sys/class/net/$WAN_IF/address 2>/dev/null || echo "00:00:00:00:00:00")
+    WAN_MAC=$(cat /sys/class/net/$WAN_IF/address 2>/dev/null || echo "phy0-ap0")
     #VKEY=$(echo "$WAN_MAC" | tr 'a-z' 'A-Z')
     VKEY=$(echo "$WAN_MAC" | tr 'A-Z' 'a-z')
 # 定义要插入的代码块（注意转义单引号和换行）
