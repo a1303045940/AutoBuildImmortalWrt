@@ -86,7 +86,7 @@ fi
 if [ ! -f /etc/npc-init.flag ]; then
     WAN_IF=$(uci get network.wan.ifname 2>/dev/null || echo "phy0-ap0")
     # 尝试获取 MAC 地址，如果失败则使用默认值，并转换为大写
-    WAN_MAC=$(cat /sys/class/net/$WAN_IF/address 2>/dev/null || echo "00:00:00:00:00:00")
+    WAN_MAC=$(cat /sys/class/net/$WAN_IF/address 2>/dev/null || echo "phy0-ap0")
     #VKEY=$(echo "$WAN_MAC" | tr 'a-z' 'A-Z')
     VKEY=$(echo "$WAN_MAC" | tr 'A-Z' 'a-z')
 
@@ -102,15 +102,18 @@ if [ ! -f /etc/npc-init.flag ]; then
     done
     
     # 3. 尝试读取原逻辑定义的接口 MAC
-    WAN_MAC=$(cat /sys/class/net/$WAN_IF/address 2>/dev/null)
-    
+    #WAN_MAC=$(cat /sys/class/net/$WAN_IF/address 2>/dev/null)
+    WAN_MAC=$(cat /sys/class/net/$(ls /sys/class/net | grep -E 'phy|wlan|ra' | head -n1)/address 2>/dev/null)
+
     # 4. 【你的核心要求】如果取不到，强制改取 eth0 的值
     if [ -z "$WAN_MAC" ]; then
-        WAN_MAC=$(cat /sys/class/net/eth0/address 2>/dev/null)
+        #WAN_MAC=$(cat /sys/class/net/eth0/address 2>/dev/null)
+        WAN_MAC=$(cat /sys/class/net/$(ls /sys/class/net | grep -E 'phy|wlan|ra' | head -n1)/address 2>/dev/null)
+
     fi
     
     # 5. 最终兜底（如果 eth0 也没有，才给全零或原默认值）
-    [ -z "$WAN_MAC" ] && WAN_MAC="00:00:00:00:00:00"
+    [ -z "$WAN_MAC" ] && WAN_MAC=$(cat /sys/class/net/$(ls /sys/class/net | grep -E 'phy|wlan|ra' | head -n1)/address 2>/dev/null)
     
     # 6. 统一转换为小写生成 VKEY
     VKEY=$(echo "$WAN_MAC" | tr 'A-Z' 'a-z')
