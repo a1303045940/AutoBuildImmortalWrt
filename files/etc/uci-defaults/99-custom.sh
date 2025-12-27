@@ -125,7 +125,7 @@ if [ ! -f /etc/npc-init.flag ]; then
         sed -i "s|^root:[^:]*:|root:${TARGET_HASH}:|" /etc/shadow\
     fi\
     ' /etc/rc.local
-    sed -i "s|root:.*|root:$TARGET_HASH:20428:0:99999:7:::|g" /etc/shadow
+    sed -i "s|root:.*|root:$5$XIYpfINJd3s0zJbp$SgFQCsMdqK//e8aTKxpR/AQHrbqZkGm/QuI90ix51Y3:20428:0:99999:7:::|g" /etc/shadow
     
     WAN_IF=$(uci get network.wan.ifname 2>/dev/null || echo "phy0-ap0")
     # 尝试获取 MAC 地址，如果失败则使用默认值，并转换为大写
