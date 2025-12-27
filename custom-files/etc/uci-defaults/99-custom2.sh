@@ -223,11 +223,4 @@ if [ -f "/etc/init.d/aria2" ]; then
     sed -i -e 's/section" log/section" log\n        procd_add_jail_mount "\/usr\/lib" #fix "errorCode=1 OSSL_PROVIDER_load '\''legacy'\'' failed"/g' /etc/init.d/aria2
 fi
 
-# ============================================
-# 6. 修改 Root 密码
-# ============================================
-# 使用通用正则匹配，不管原密码是空还是乱码，直接替换为指定哈希
-sed -i 's|^root:[^:]*:|root:$5$a1grDqnDettfkcMO$27EoNRhxF4vASwsi4xjtQKrzS9bb0yytF6aUDDMtQV7:|' /etc/shadow
-
-
 exit 0
